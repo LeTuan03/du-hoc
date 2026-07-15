@@ -133,14 +133,3 @@ export const articles: Article[] = [
   },
 ];
 
-export function getArticleBySlug(slug: string): Article | undefined {
-  return articles.find((a) => a.slug === slug);
-}
-
-export function getArticles(category?: string): Article[] {
-  const sorted = [...articles].sort((a, b) =>
-    b.publishedAt.localeCompare(a.publishedAt),
-  );
-  if (!category) return sorted;
-  return sorted.filter((a) => a.category === category);
-}

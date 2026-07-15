@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { GraduationCap } from "lucide-react";
 import { siteConfig } from "@/lib/site";
 
 const navItems = [
@@ -38,14 +39,16 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-50 bg-white/95 backdrop-blur transition-shadow ${
-        scrolled ? "shadow-md" : "border-b border-slate-100"
-      }`}
+      className={`sticky top-0 z-50 bg-white/95 backdrop-blur transition-shadow ${scrolled ? "shadow-md" : "border-b border-slate-100"
+        }`}
     >
       {/* Top bar */}
       <div className="hidden md:block bg-[#123a7a] text-white text-xs">
         <div className="mx-auto max-w-7xl px-4 py-1.5 flex justify-between items-center">
-          <p>🎓 Tư vấn du học miễn phí — Đồng hành từ hồ sơ đến visa</p>
+          <p className="flex items-center gap-1.5">
+            <GraduationCap size={14} aria-hidden />
+            Tư vấn du học miễn phí — Đồng hành từ hồ sơ đến visa
+          </p>
           <a href={siteConfig.hotlineHref} className="font-semibold hover:text-[#f5c451]">
             Hotline: {siteConfig.hotline}
           </a>
@@ -56,9 +59,7 @@ export function Header() {
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Về trang chủ">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#1e4fa3] text-white font-extrabold text-lg">
-              G
-            </span>
+            <img src="/images/logo.svg" alt="Logo" className="grid h-10 w-10 place-items-center" />
             <span className="leading-tight">
               <span className="block font-extrabold text-[#1e4fa3] text-lg">
                 {siteConfig.name}
@@ -75,11 +76,10 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive(item.href)
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive(item.href)
                     ? "bg-[#e8f0fc] text-[#1e4fa3]"
                     : "text-slate-700 hover:bg-slate-50 hover:text-[#1e4fa3]"
-                }`}
+                  }`}
               >
                 {item.label}
               </Link>
@@ -124,11 +124,10 @@ export function Header() {
             <Link
               key={item.href}
               href={item.href}
-              className={`block rounded-lg px-3 py-2.5 text-sm font-medium ${
-                isActive(item.href)
+              className={`block rounded-lg px-3 py-2.5 text-sm font-medium ${isActive(item.href)
                   ? "bg-[#e8f0fc] text-[#1e4fa3]"
                   : "text-slate-700 hover:bg-slate-50"
-              }`}
+                }`}
             >
               {item.label}
             </Link>

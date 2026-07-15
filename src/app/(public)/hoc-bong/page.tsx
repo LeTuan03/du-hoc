@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getActiveScholarships } from "@/server/data/scholarships";
+import { scholarshipRepository } from "@/server/repositories/scholarshipRepository";
 import { ScholarshipCard } from "@/components/public/ScholarshipCard";
 import { Breadcrumb } from "@/components/public/Breadcrumb";
 import { SectionHeading } from "@/components/public/SectionHeading";
@@ -11,10 +11,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/hoc-bong" },
 };
 
-export default function ScholarshipsPage() {
-  const items = getActiveScholarships().sort((a, b) =>
-    a.deadline.localeCompare(b.deadline),
-  );
+export default async function ScholarshipsPage() {
+  const items = await scholarshipRepository.findActive();
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">

@@ -9,3 +9,7 @@ data/leads.json
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Anh upload runtime (chi luu path trong DB)
+public/uploads/*
+!public/uploads/.gitkeep

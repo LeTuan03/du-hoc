@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { globalFaqs } from "@/server/data/faqs";
+import { faqRepository } from "@/server/repositories/faqRepository";
 import { Breadcrumb } from "@/components/public/Breadcrumb";
 import { SectionHeading } from "@/components/public/SectionHeading";
 import { FaqAccordion } from "@/components/public/FaqAccordion";
@@ -13,7 +13,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/faq" },
 };
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  const globalFaqs = await faqRepository.findAll();
   return (
     <>
       <JsonLd

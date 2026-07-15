@@ -98,6 +98,12 @@ export interface Article {
   author: string;
   publishedAt: string; // ISO date
   readMinutes: number;
+  /** SEO — nếu trống, trang public fallback về title/excerpt */
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  coverImage?: string | null;
+  /** ISO datetime — dùng cho sitemap lastmod + JSON-LD dateModified */
+  updatedAt?: string;
 }
 
 export interface Testimonial {
@@ -107,13 +113,19 @@ export interface Testimonial {
   countrySlug: string;
   program: string;
   content: string;
-  scholarship?: string;
+  scholarship?: string | null;
   year: number;
 }
 
 export interface FaqItem {
   question: string;
   answer: string;
+}
+
+/** FAQ lưu trong DB (bảng faqs) — FaqItem + định danh cho admin CRUD */
+export interface FaqRecord extends FaqItem {
+  id: string;
+  displayOrder: number;
 }
 
 /** Pipeline trạng thái lead — state machine mục 12.4 */
@@ -170,17 +182,17 @@ export interface Lead {
   email: string;
   phone: string;
   city: string;
-  currentSchool?: string;
-  gpa?: number;
-  languageLevel?: string;
-  desiredCountry?: string; // country slug
-  desiredUniversity?: string; // university slug
-  major?: string;
-  intakeTerm?: string;
-  budget?: string;
-  note?: string;
+  currentSchool?: string | null;
+  gpa?: number | null;
+  languageLevel?: string | null;
+  desiredCountry?: string | null; // country slug
+  desiredUniversity?: string | null; // university slug
+  major?: string | null;
+  intakeTerm?: string | null;
+  budget?: string | null;
+  note?: string | null;
   status: LeadStatus;
-  sourcePage?: string;
+  sourcePage?: string | null;
   notes: LeadNote[];
   createdAt: string;
   updatedAt: string;

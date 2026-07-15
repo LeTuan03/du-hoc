@@ -1,18 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  scholarships,
-  getScholarshipBySlug,
-} from "@/server/data/scholarships";
-import { getCountryBySlug } from "@/server/data/countries";
-import { getUniversityBySlug } from "@/server/data/universities";
+import { scholarshipRepository } from "@/server/repositories/scholarshipRepository";
+import { countryRepository } from "@/server/repositories/countryRepository";
+import { universityRepository } from "@/server/repositories/universityRepository";
 import { Breadcrumb } from "@/components/public/Breadcrumb";
 import { ConsultationForm } from "@/components/public/ConsultationForm";
 import { ScholarshipCard } from "@/components/public/ScholarshipCard";
 import { daysUntil, formatDate } from "@/lib/format";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const scholarships = await scholarshipRepository.findAll();
   return scholarships.map((s) => ({ slug: s.slug }));
 }
 
@@ -22,7 +20,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const s = getScholarshipBySlug(slug);
+  const s = await scholarshipRepository.findBySlug(slug);
   if (!s) return {};
   return {
     title: `${s.name} — Giá trị, điều kiện, deadline`,
@@ -37,18 +35,21 @@ export default async function ScholarshipDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const scholarship = getScholarshipBySlug(slug);
+  const scholarship = await scholarshipRepository.findBySlug(slug);
   if (!scholarship) notFound();
 
-  const country = scholarship.countrySlug
-    ? getCountryBySlug(scholarship.countrySlug)
-    : undefined;
-  const university = scholarship.universitySlug
-    ? getUniversityBySlug(scholarship.universitySlug)
-    : undefined;
+  const [country, university, activeScholarships] = await Promise.all([
+    scholarship.countrySlug
+      ? countryRepository.findBySlug(scholarship.countrySlug)
+      : undefined,
+    scholarship.universitySlug
+      ? universityRepository.findBySlug(scholarship.universitySlug)
+      : undefined,
+    scholarshipRepository.findActive(),
+  ]);
   const remaining = daysUntil(scholarship.deadline);
-  const related = scholarships
-    .filter((s) => s.slug !== slug && s.isActive)
+  const related = activeScholarships
+    .filter((s) => s.slug !== slug)
     .slice(0, 3);
 
   return (

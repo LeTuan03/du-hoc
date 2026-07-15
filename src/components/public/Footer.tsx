@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Clock, Mail, MapPin, Music2, Phone, Play } from "lucide-react";
 import { siteConfig } from "@/lib/site";
 
 const quickLinks = [
@@ -26,9 +27,7 @@ export function Footer() {
           {/* Về chúng tôi */}
           <div>
             <div className="flex items-center gap-2">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#1e4fa3] text-white font-extrabold text-lg">
-                G
-              </span>
+              <img src="/images/logo.svg" alt="Logo" className="grid h-10 w-10 place-items-center" />
               <span className="font-extrabold text-white text-lg">{siteConfig.name}</span>
             </div>
             <p className="mt-4 text-sm leading-relaxed">
@@ -39,8 +38,8 @@ export function Footer() {
             <div className="mt-4 flex gap-3">
               {[
                 { href: siteConfig.facebook, label: "Facebook", icon: "f" },
-                { href: siteConfig.youtube, label: "YouTube", icon: "▶" },
-                { href: siteConfig.tiktok, label: "TikTok", icon: "♪" },
+                { href: siteConfig.youtube, label: "YouTube", icon: <Play size={15} /> },
+                { href: siteConfig.tiktok, label: "TikTok", icon: <Music2 size={15} /> },
                 { href: siteConfig.zalo, label: "Zalo", icon: "Z" },
               ].map((s) => (
                 <a
@@ -96,23 +95,23 @@ export function Footer() {
             </h3>
             <ul className="mt-4 space-y-3 text-sm">
               <li className="flex gap-2.5">
-                <span aria-hidden>📍</span>
+                <MapPin size={15} className="mt-0.5 shrink-0" aria-hidden />
                 <span>{siteConfig.address}</span>
               </li>
               <li className="flex gap-2.5">
-                <span aria-hidden>📞</span>
+                <Phone size={15} className="mt-0.5 shrink-0" aria-hidden />
                 <a href={siteConfig.hotlineHref} className="font-semibold text-[#f5c451]">
                   {siteConfig.hotline}
                 </a>
               </li>
               <li className="flex gap-2.5">
-                <span aria-hidden>✉️</span>
+                <Mail size={15} className="mt-0.5 shrink-0" aria-hidden />
                 <a href={`mailto:${siteConfig.email}`} className="hover:text-[#f5c451]">
                   {siteConfig.email}
                 </a>
               </li>
               <li className="flex gap-2.5">
-                <span aria-hidden>🕐</span>
+                <Clock size={15} className="mt-0.5 shrink-0" aria-hidden />
                 <span>{siteConfig.workingHours}</span>
               </li>
             </ul>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { testimonials } from "@/server/data/testimonials";
+import { testimonialRepository } from "@/server/repositories/testimonialRepository";
 import { Breadcrumb } from "@/components/public/Breadcrumb";
 import { SectionHeading } from "@/components/public/SectionHeading";
 import { Flag } from "@/components/public/Flag";
@@ -12,7 +12,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/cau-chuyen-hoc-vien" },
 };
 
-export default function TestimonialsPage() {
+export default async function TestimonialsPage() {
+  const testimonials = await testimonialRepository.findAll();
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <Breadcrumb items={[{ label: "Câu chuyện học viên" }]} />

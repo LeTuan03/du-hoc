@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { CalendarDays, Stamp, UserPlus, Users } from "lucide-react";
 import { leadService } from "@/server/services/leadService";
-import { getCountryBySlug } from "@/server/data/countries";
+import { countryRepository } from "@/server/repositories/countryRepository";
 import { LEAD_STATUS_LABELS, type LeadStatus } from "@/server/types";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DonutChart, FunnelBars, LineChart } from "@/components/admin/Charts";
@@ -19,7 +20,12 @@ const funnelColors: Record<LeadStatus, string> = {
 };
 
 export default async function AdminDashboardPage() {
-  const leads = await leadService.list({});
+  const [leads, countries] = await Promise.all([
+    leadService.list({}),
+    countryRepository.findAll(),
+  ]);
+  const countryName = (slug: string) =>
+    countries.find((c) => c.slug === slug)?.name;
 
   const today = new Date();
   const isSameDay = (iso: string) => {
@@ -48,25 +54,30 @@ export default async function AdminDashboardPage() {
   const visaRate =
     submitted > 0 ? Math.round((visaApproved / submitted) * 100) : 0;
 
-  // Lead theo ngày — 30 ngày gần nhất
+  // Lead theo ngày — 30 ngày gần nhất.
+  // Key theo giờ ĐỊA PHƯƠNG (không dùng toISOString = UTC) để khớp với
+  // cách tính "Hôm nay" ở stat card phía trên.
+  const localKey = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const days: { key: string; label: string }[] = [];
   for (let i = 29; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     days.push({
-      key: d.toISOString().slice(0, 10),
+      key: localKey(d),
       label: `${d.getDate()}/${d.getMonth() + 1}`,
     });
   }
   const byDay = days.map(
-    (day) => leads.filter((l) => l.createdAt.slice(0, 10) === day.key).length,
+    (day) =>
+      leads.filter((l) => localKey(new Date(l.createdAt)) === day.key).length,
   );
 
   // Lead theo quốc gia
   const byCountry = new Map<string, number>();
   leads.forEach((l) => {
     const name = l.desiredCountry
-      ? (getCountryBySlug(l.desiredCountry)?.name ?? l.desiredCountry)
+      ? (countryName(l.desiredCountry) ?? l.desiredCountry)
       : "Chưa xác định";
     byCountry.set(name, (byCountry.get(name) ?? 0) + 1);
   });
@@ -86,10 +97,10 @@ export default async function AdminDashboardPage() {
   const recentLeads = leads.slice(0, 8);
 
   const statCards = [
-    { label: "Tổng lead", value: totalLeads, icon: "👥", tone: "text-[#1e4fa3]" },
-    { label: "Hôm nay", value: todayLeads, icon: "🆕", tone: "text-cyan-600" },
-    { label: "Tháng này", value: monthLeads, icon: "📅", tone: "text-violet-600" },
-    { label: "Tỷ lệ đậu visa", value: `${visaRate}%`, icon: "🛂", tone: "text-emerald-600" },
+    { label: "Tổng lead", value: totalLeads, icon: <Users size={18} />, tone: "text-[#1e4fa3]" },
+    { label: "Hôm nay", value: todayLeads, icon: <UserPlus size={18} />, tone: "text-cyan-600" },
+    { label: "Tháng này", value: monthLeads, icon: <CalendarDays size={18} />, tone: "text-violet-600" },
+    { label: "Tỷ lệ đậu visa", value: `${visaRate}%`, icon: <Stamp size={18} />, tone: "text-emerald-600" },
   ];
 
   return (
@@ -110,7 +121,9 @@ export default async function AdminDashboardPage() {
               <p className="text-sm font-semibold text-slate-500">
                 {card.label}
               </p>
-              <span aria-hidden>{card.icon}</span>
+              <span aria-hidden className={card.tone}>
+                {card.icon}
+              </span>
             </div>
             <p className={`mt-2 text-3xl font-extrabold ${card.tone}`}>
               {card.value}
@@ -178,7 +191,7 @@ export default async function AdminDashboardPage() {
                     </td>
                     <td className="py-2.5 pr-3 text-slate-600">
                       {lead.desiredCountry
-                        ? (getCountryBySlug(lead.desiredCountry)?.name ?? "—")
+                        ? (countryName(lead.desiredCountry) ?? "—")
                         : "—"}
                     </td>
                     <td className="py-2.5 pr-3">

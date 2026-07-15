@@ -47,7 +47,7 @@ export default function AboutPage() {
     <div className="mx-auto max-w-7xl px-4 py-10">
       <Breadcrumb items={[{ label: "Giới thiệu" }]} />
 
-      <div className="mt-8 max-w-3xl">
+      <div className="mt-8">
         <p className="text-sm font-bold uppercase tracking-widest text-[#1e4fa3]">
           Về chúng tôi
         </p>

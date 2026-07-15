@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  filterUniversities,
-  getAllMajors,
-} from "@/server/data/universities";
-import { countries } from "@/server/data/countries";
+import { universityRepository } from "@/server/repositories/universityRepository";
+import { countryRepository } from "@/server/repositories/countryRepository";
 import { UniversityCard } from "@/components/public/UniversityCard";
 import { Breadcrumb } from "@/components/public/Breadcrumb";
 
@@ -43,14 +40,19 @@ export default async function UniversitiesPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
-  const results = filterUniversities({
-    country: sp.quoc_gia || undefined,
-    major: sp.nganh || undefined,
-    tuitionMax: sp.hoc_phi ? Number(sp.hoc_phi) : undefined,
-    search: sp.tu_khoa || undefined,
-    sort: (sp.sap_xep as "featured" | "ranking" | "tuition-asc" | "tuition-desc") || "featured",
-  });
-  const majors = getAllMajors();
+  // Number("abc") = NaN → mọi so sánh false → 0 kết quả; bỏ qua filter không hợp lệ
+  const tuitionMax = Number(sp.hoc_phi);
+  const [results, majors, countries] = await Promise.all([
+    universityRepository.filter({
+      country: sp.quoc_gia || undefined,
+      major: sp.nganh || undefined,
+      tuitionMax: Number.isFinite(tuitionMax) && tuitionMax > 0 ? tuitionMax : undefined,
+      search: sp.tu_khoa || undefined,
+      sort: (sp.sap_xep as "featured" | "ranking" | "tuition-asc" | "tuition-desc") || "featured",
+    }),
+    universityRepository.getAllMajors(),
+    countryRepository.findAll(),
+  ]);
   const hasFilter = !!(sp.quoc_gia || sp.nganh || sp.hoc_phi || sp.tu_khoa);
 
   const selectCls =

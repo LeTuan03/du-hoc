@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { leadService } from "@/server/services/leadService";
-import { getCountryBySlug } from "@/server/data/countries";
-import { getUniversityBySlug } from "@/server/data/universities";
+import { countryRepository } from "@/server/repositories/countryRepository";
+import { universityRepository } from "@/server/repositories/universityRepository";
 import { LEAD_STATUS_LABELS } from "@/server/types";
+import { deleteLead } from "@/server/actions/leadActions";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { LeadActions } from "@/components/admin/LeadActions";
+import { DeleteButton } from "@/components/admin/DeleteButton";
 import { formatDate, formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -22,13 +24,13 @@ export default async function AdminLeadDetailPage({
   if (!lead) notFound();
 
   const country = lead.desiredCountry
-    ? getCountryBySlug(lead.desiredCountry)
+    ? await countryRepository.findBySlug(lead.desiredCountry)
     : undefined;
   const university = lead.desiredUniversity
-    ? getUniversityBySlug(lead.desiredUniversity)
+    ? await universityRepository.findBySlug(lead.desiredUniversity)
     : undefined;
 
-  const infoRows: { label: string; value: string | undefined }[] = [
+  const infoRows: { label: string; value: string | null | undefined }[] = [
     { label: "Ngày sinh", value: formatDate(lead.dateOfBirth) },
     { label: "Giới tính", value: genderLabels[lead.gender] },
     { label: "Email", value: lead.email },
@@ -69,7 +71,15 @@ export default async function AdminLeadDetailPage({
             {lead.sourcePage && <> · từ trang <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{lead.sourcePage}</code></>}
           </p>
         </div>
-        <StatusBadge status={lead.status} />
+        <div className="flex items-center gap-3">
+          <StatusBadge status={lead.status} />
+          <DeleteButton
+            action={deleteLead.bind(null, lead.id)}
+            confirmMessage={`Xóa lead "${lead.fullName}" cùng toàn bộ lịch sử chăm sóc? Hành động này không thể hoàn tác.`}
+            redirectTo="/admin/leads"
+            label="Xóa lead"
+          />
+        </div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">

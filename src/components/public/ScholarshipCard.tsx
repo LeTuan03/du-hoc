@@ -1,13 +1,14 @@
 import Link from "next/link";
+import { CircleDollarSign, GraduationCap } from "lucide-react";
 import type { Scholarship } from "@/server/types";
-import { getCountryBySlug } from "@/server/data/countries";
+import { countryRepository } from "@/server/repositories/countryRepository";
 import { daysUntil, formatDate } from "@/lib/format";
 import { Flag } from "./Flag";
 
-export function ScholarshipCard({ scholarship }: { scholarship: Scholarship }) {
-  const country = scholarship.countrySlug
-    ? getCountryBySlug(scholarship.countrySlug)
-    : undefined;
+export async function ScholarshipCard({ scholarship }: { scholarship: Scholarship }) {
+  // findAll() được cache theo request — tránh N+1 findUnique theo từng card
+  const countries = await countryRepository.findAll();
+  const country = countries.find((c) => c.slug === scholarship.countrySlug);
   const remaining = daysUntil(scholarship.deadline);
 
   return (
@@ -16,8 +17,8 @@ export function ScholarshipCard({ scholarship }: { scholarship: Scholarship }) {
       className="group flex flex-col rounded-2xl border border-amber-100 bg-gradient-to-b from-amber-50/60 to-white p-5 shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#f5c451] text-xl shadow-sm">
-          🎓
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#f5c451] text-[#123a7a] shadow-sm">
+          <GraduationCap size={22} aria-hidden />
         </span>
         {country && (
           <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
@@ -31,8 +32,9 @@ export function ScholarshipCard({ scholarship }: { scholarship: Scholarship }) {
         {scholarship.name}
       </h3>
 
-      <p className="mt-2 text-sm font-bold text-amber-700">
-        💰 {scholarship.value}
+      <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-amber-700">
+        <CircleDollarSign size={15} className="shrink-0" aria-hidden />
+        {scholarship.value}
       </p>
 
       <p className="mt-2 line-clamp-2 text-sm text-slate-600">

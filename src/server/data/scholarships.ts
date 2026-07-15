@@ -141,10 +141,3 @@ export const scholarships: Scholarship[] = [
   },
 ];
 
-export function getScholarshipBySlug(slug: string): Scholarship | undefined {
-  return scholarships.find((s) => s.slug === slug);
-}
-
-export function getActiveScholarships(): Scholarship[] {
-  return scholarships.filter((s) => s.isActive);
-}

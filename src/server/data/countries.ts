@@ -147,6 +147,3 @@ export const countries: Country[] = [
   },
 ];
 
-export function getCountryBySlug(slug: string): Country | undefined {
-  return countries.find((c) => c.slug === slug);
-}

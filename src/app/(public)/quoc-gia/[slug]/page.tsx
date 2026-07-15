@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { countries, getCountryBySlug } from "@/server/data/countries";
-import { filterUniversities } from "@/server/data/universities";
-import { scholarships } from "@/server/data/scholarships";
-import { getArticles } from "@/server/data/articles";
+import { countryRepository } from "@/server/repositories/countryRepository";
+import { universityRepository } from "@/server/repositories/universityRepository";
+import { scholarshipRepository } from "@/server/repositories/scholarshipRepository";
+import { articleRepository } from "@/server/repositories/articleRepository";
 import { UniversityCard } from "@/components/public/UniversityCard";
 import { ScholarshipCard } from "@/components/public/ScholarshipCard";
 import { ArticleCard } from "@/components/public/ArticleCard";
@@ -14,7 +14,8 @@ import { Flag } from "@/components/public/Flag";
 import { JsonLd } from "@/components/public/JsonLd";
 import { gradientFor } from "@/lib/format";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const countries = await countryRepository.findAll();
   return countries.map((c) => ({ slug: c.slug }));
 }
 
@@ -24,7 +25,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const country = getCountryBySlug(slug);
+  const country = await countryRepository.findBySlug(slug);
   if (!country) return {};
   return {
     title: `Du học ${country.name} — Điều kiện, chi phí, học bổng ${new Date().getFullYear() + 1}`,
@@ -50,14 +51,18 @@ export default async function CountryDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const country = getCountryBySlug(slug);
+  const country = await countryRepository.findBySlug(slug);
   if (!country) notFound();
 
-  const countryUniversities = filterUniversities({ country: slug });
-  const countryScholarships = scholarships.filter(
-    (s) => s.countrySlug === slug && s.isActive,
+  const [countryUniversities, activeScholarships, articles] = await Promise.all([
+    universityRepository.filter({ country: slug }),
+    scholarshipRepository.findActive(),
+    articleRepository.findAll(),
+  ]);
+  const countryScholarships = activeScholarships.filter(
+    (s) => s.countrySlug === slug,
   );
-  const relatedArticles = getArticles().slice(0, 3);
+  const relatedArticles = articles.slice(0, 3);
 
   return (
     <>
@@ -106,7 +111,7 @@ export default async function CountryDetailPage({
               </p>
             </div>
           </div>
-          <p className="mt-5 max-w-3xl text-lg leading-relaxed text-white/90">
+          <p className="mt-5 text-lg leading-relaxed text-white/90">
             {country.description}
           </p>
         </div>
@@ -212,7 +217,7 @@ export default async function CountryDetailPage({
 
       {/* Form đăng ký prefill quốc gia */}
       <section className="py-16">
-        <div className="mx-auto max-w-3xl px-4">
+        <div className="mx-auto px-4">
           <div className="rounded-3xl bg-white p-6 shadow-[var(--shadow-card-hover)] ring-1 ring-slate-100 sm:p-8">
             <h2 className="text-2xl font-extrabold text-slate-900">
               Nhận lộ trình du học {country.name} miễn phí

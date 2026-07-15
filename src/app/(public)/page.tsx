@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { siteConfig } from "@/lib/site";
-import { countries } from "@/server/data/countries";
-import { universities } from "@/server/data/universities";
-import { getActiveScholarships } from "@/server/data/scholarships";
-import { getArticles } from "@/server/data/articles";
-import { testimonials } from "@/server/data/testimonials";
-import { globalFaqs } from "@/server/data/faqs";
+import { countryRepository } from "@/server/repositories/countryRepository";
+import { universityRepository } from "@/server/repositories/universityRepository";
+import { scholarshipRepository } from "@/server/repositories/scholarshipRepository";
+import { articleRepository } from "@/server/repositories/articleRepository";
+import { testimonialRepository } from "@/server/repositories/testimonialRepository";
+import { faqRepository } from "@/server/repositories/faqRepository";
 import { PROGRAM_LEVEL_LABELS, type ProgramLevel } from "@/server/types";
 import { SectionHeading } from "@/components/public/SectionHeading";
 import { StatCounter } from "@/components/public/StatCounter";
@@ -18,6 +18,7 @@ import { FaqAccordion } from "@/components/public/FaqAccordion";
 import { ConsultationForm } from "@/components/public/ConsultationForm";
 import { Reveal } from "@/components/public/Reveal";
 import { JsonLd } from "@/components/public/JsonLd";
+import { daysUntil } from "@/lib/format";
 import heroStudents from "@/assets/images/hero_students_1784108044388.jpg";
 
 export const revalidate = 3600;
@@ -32,12 +33,26 @@ const programLevelIcons: Record<ProgramLevel, string> = {
   "chuyen-tiep": "🔄",
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [countries, universities, activeScholarships, articles, testimonials, globalFaqs] =
+    await Promise.all([
+      countryRepository.findAll(),
+      universityRepository.findAll(),
+      scholarshipRepository.findActive(),
+      articleRepository.findAll(),
+      testimonialRepository.findAll(),
+      faqRepository.findAll(),
+    ]);
+
   const featuredUniversities = universities
     .filter((u) => u.isFeatured)
     .slice(0, 6);
-  const featuredScholarships = getActiveScholarships().slice(0, 4);
-  const latestArticles = getArticles().slice(0, 3);
+  // findActive sắp theo deadline gần nhất — loại học bổng đã quá hạn
+  // để chúng không chiếm các vị trí đầu của khối nổi bật
+  const featuredScholarships = activeScholarships
+    .filter((s) => daysUntil(s.deadline) > 0)
+    .slice(0, 4);
+  const latestArticles = articles.slice(0, 3);
 
   return (
     <>

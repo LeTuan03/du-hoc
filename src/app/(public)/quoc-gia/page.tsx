@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { countries } from "@/server/data/countries";
+import { countryRepository } from "@/server/repositories/countryRepository";
 import { CountryCard } from "@/components/public/CountryCard";
 import { Breadcrumb } from "@/components/public/Breadcrumb";
 import { SectionHeading } from "@/components/public/SectionHeading";
@@ -11,7 +11,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/quoc-gia" },
 };
 
-export default function CountriesPage() {
+export default async function CountriesPage() {
+  const countries = await countryRepository.findAll();
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <Breadcrumb items={[{ label: "Quốc gia" }]} />

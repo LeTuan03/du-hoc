@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { articles, getArticleBySlug, getArticles } from "@/server/data/articles";
+import { articleRepository } from "@/server/repositories/articleRepository";
 import { ARTICLE_CATEGORY_LABELS } from "@/server/types";
 import { Breadcrumb } from "@/components/public/Breadcrumb";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { ConsultationForm } from "@/components/public/ConsultationForm";
+import { CopyLinkButton } from "@/components/public/CopyLinkButton";
 import { JsonLd } from "@/components/public/JsonLd";
 import { formatDate } from "@/lib/format";
 import { siteConfig } from "@/lib/site";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const articles = await articleRepository.findAll();
   return articles.map((a) => ({ slug: a.slug }));
 }
 
@@ -20,18 +22,30 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await articleRepository.findBySlug(slug);
   if (!article) return {};
+  const title = article.metaTitle || article.title;
+  const description = article.metaDescription || article.excerpt;
   return {
-    title: article.title,
-    description: article.excerpt,
+    title,
+    description,
     alternates: { canonical: `/tin-tuc/${article.slug}` },
     openGraph: {
       type: "article",
-      title: article.title,
-      description: article.excerpt,
+      url: `/tin-tuc/${article.slug}`,
+      title,
+      description,
       publishedTime: article.publishedAt,
+      modifiedTime: article.updatedAt,
       authors: [article.author],
+      section: ARTICLE_CATEGORY_LABELS[article.category],
+      ...(article.coverImage ? { images: [article.coverImage] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      ...(article.coverImage ? { images: [article.coverImage] } : {}),
     },
   };
 }
@@ -42,12 +56,22 @@ export default async function ArticleDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await articleRepository.findBySlug(slug);
   if (!article) notFound();
 
-  const related = getArticles(article.category)
+  const related = (await articleRepository.findAll(article.category))
     .filter((a) => a.slug !== slug)
     .slice(0, 3);
+
+  // JSON-LD yêu cầu URL tuyệt đối (metadataBase chỉ áp dụng cho metadata)
+  const base = siteConfig.url.replace(/\/$/, "");
+  const articleUrl = `${base}/tin-tuc/${article.slug}`;
+  let absoluteImage: string | undefined;
+  if (article.coverImage) {
+    absoluteImage = article.coverImage.startsWith("http")
+      ? article.coverImage
+      : `${base}${article.coverImage}`;
+  }
 
   return (
     <>
@@ -55,15 +79,45 @@ export default async function ArticleDetailPage({
         data={{
           "@context": "https://schema.org",
           "@type": "Article",
+          mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
           headline: article.title,
-          description: article.excerpt,
+          description: article.metaDescription || article.excerpt,
+          inLanguage: "vi-VN",
           datePublished: article.publishedAt,
-          author: { "@type": "Organization", name: article.author },
-          publisher: { "@type": "Organization", name: siteConfig.name },
+          ...(article.updatedAt ? { dateModified: article.updatedAt } : {}),
+          ...(absoluteImage ? { image: [absoluteImage] } : {}),
+          author: { "@type": "Organization", name: article.author, url: base },
+          publisher: {
+            "@type": "Organization",
+            name: siteConfig.name,
+            url: base,
+          },
+        }}
+      />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Trang chủ", item: base },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Tin tức",
+              item: `${base}/tin-tuc`,
+            },
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: ARTICLE_CATEGORY_LABELS[article.category],
+              item: `${base}/tin-tuc?danh_muc=${article.category}`,
+            },
+            { "@type": "ListItem", position: 4, name: article.title },
+          ],
         }}
       />
 
-      <article className="mx-auto max-w-3xl px-4 py-10">
+      <article className="mx-auto px-4 py-10">
         <Breadcrumb
           items={[
             { label: "Tin tức", href: "/tin-tuc" },
@@ -96,8 +150,19 @@ export default async function ArticleDetailPage({
             </time>
             <span aria-hidden>·</span>
             <span>⏱ {article.readMinutes} phút đọc</span>
+            <span className="ml-auto">
+              <CopyLinkButton />
+            </span>
           </div>
         </header>
+
+        {article.coverImage && (
+          <img
+            src={article.coverImage}
+            alt={article.title}
+            className="mt-8 w-full rounded-2xl object-cover"
+          />
+        )}
 
         <div
           className="prose-content mt-8"

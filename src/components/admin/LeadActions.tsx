@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Alert, App, Button, Card, Input, Select } from "antd";
+import { ArrowRightCircle, StickyNote } from "lucide-react";
 import {
   LEAD_STATUS_LABELS,
   getAllowedTransitions,
@@ -17,9 +19,10 @@ export function LeadActions({
   currentStatus: LeadStatus;
 }) {
   const router = useRouter();
+  const { message } = App.useApp();
   const allowed = getAllowedTransitions(currentStatus);
 
-  const [newStatus, setNewStatus] = useState<LeadStatus | "">("");
+  const [newStatus, setNewStatus] = useState<LeadStatus | undefined>();
   const [statusNote, setStatusNote] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -39,6 +42,7 @@ export function LeadActions({
         setError(json.message || "Có lỗi xảy ra");
         return false;
       }
+      message.success("Đã cập nhật");
       router.refresh();
       return true;
     } catch {
@@ -49,8 +53,7 @@ export function LeadActions({
     }
   }
 
-  async function changeStatus(e: React.FormEvent) {
-    e.preventDefault();
+  async function changeStatus() {
     if (!newStatus) return;
     const ok = await patch({
       action: "change_status",
@@ -58,105 +61,79 @@ export function LeadActions({
       note: statusNote,
     });
     if (ok) {
-      setNewStatus("");
+      setNewStatus(undefined);
       setStatusNote("");
     }
   }
 
-  async function addNote(e: React.FormEvent) {
-    e.preventDefault();
+  async function addNote() {
     if (!note.trim()) return;
     const ok = await patch({ action: "add_note", note });
     if (ok) setNote("");
   }
 
-  const inputCls =
-    "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[#1e4fa3] focus:outline-none focus:ring-2 focus:ring-[#1e4fa3]/20";
-
   return (
     <div className="space-y-5">
-      {/* Đổi trạng thái */}
-      <form
-        onSubmit={changeStatus}
-        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100"
-      >
-        <h2 className="font-bold text-slate-900">Chuyển trạng thái</h2>
+      <Card title="Chuyển trạng thái">
         {allowed.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="text-sm text-slate-500">
             Lead đã ở trạng thái cuối ({LEAD_STATUS_LABELS[currentStatus]}) —
             không thể chuyển tiếp.
           </p>
         ) : (
-          <>
-            <label htmlFor="la-status" className="mt-3 block text-xs font-bold text-slate-500">
-              Trạng thái mới (theo đúng pipeline)
-            </label>
-            <select
-              id="la-status"
+          <div className="space-y-3">
+            <Select
+              placeholder="— Chọn trạng thái mới (theo pipeline) —"
               value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value as LeadStatus)}
-              className={`${inputCls} mt-1`}
-              required
-            >
-              <option value="" disabled>
-                — Chọn trạng thái —
-              </option>
-              {allowed.map((s) => (
-                <option key={s} value={s}>
-                  {LEAD_STATUS_LABELS[s]}
-                </option>
-              ))}
-            </select>
-            <label htmlFor="la-status-note" className="mt-3 block text-xs font-bold text-slate-500">
-              Ghi chú kèm theo (tùy chọn)
-            </label>
-            <textarea
-              id="la-status-note"
+              onChange={(v) => setNewStatus(v)}
+              options={allowed.map((s) => ({
+                value: s,
+                label: LEAD_STATUS_LABELS[s],
+              }))}
+              style={{ width: "100%" }}
+            />
+            <Input.TextArea
               rows={2}
               value={statusNote}
               onChange={(e) => setStatusNote(e.target.value)}
-              placeholder="VD: Khách đồng ý lộ trình, hẹn ký hợp đồng thứ 6..."
-              className={`${inputCls} mt-1`}
+              placeholder="Ghi chú kèm theo (tùy chọn). VD: Khách đồng ý lộ trình, hẹn ký hợp đồng thứ 6..."
             />
-            <button
-              type="submit"
-              disabled={busy || !newStatus}
-              className="mt-3 w-full rounded-lg bg-[#1e4fa3] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#123a7a] disabled:opacity-50"
+            <Button
+              type="primary"
+              block
+              icon={<ArrowRightCircle size={14} />}
+              disabled={!newStatus}
+              loading={busy}
+              onClick={changeStatus}
             >
-              {busy ? "Đang lưu..." : "Cập nhật trạng thái"}
-            </button>
-          </>
+              Cập nhật trạng thái
+            </Button>
+          </div>
         )}
-      </form>
+      </Card>
 
-      {/* Thêm ghi chú */}
-      <form
-        onSubmit={addNote}
-        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100"
-      >
-        <h2 className="font-bold text-slate-900">Thêm ghi chú chăm sóc</h2>
-        <textarea
-          rows={3}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="VD: Đã gọi điện, khách bận, hẹn gọi lại 15h..."
-          className={`${inputCls} mt-3`}
-          aria-label="Nội dung ghi chú"
-        />
-        <button
-          type="submit"
-          disabled={busy || !note.trim()}
-          className="mt-3 w-full rounded-lg border-2 border-[#1e4fa3] px-4 py-2 text-sm font-bold text-[#1e4fa3] transition hover:bg-[#e8f0fc] disabled:opacity-50"
-        >
-          Lưu ghi chú
-        </button>
-      </form>
+      <Card title="Thêm ghi chú chăm sóc">
+        <div className="space-y-3">
+          <Input.TextArea
+            rows={3}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="VD: Đã gọi điện, khách bận, hẹn gọi lại 15h..."
+            aria-label="Nội dung ghi chú"
+          />
+          <Button
+            block
+            icon={<StickyNote size={14} />}
+            disabled={!note.trim()}
+            loading={busy}
+            onClick={addNote}
+          >
+            Lưu ghi chú
+          </Button>
+        </div>
+      </Card>
 
-      {error && (
-        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-          {error}
-        </p>
-      )}
+      {error && <Alert type="error" showIcon message={error} />}
     </div>
   );
 }

@@ -1,14 +1,21 @@
 import type { MetadataRoute } from "next";
 import { siteConfig } from "@/lib/site";
-import { countries } from "@/server/data/countries";
-import { universities } from "@/server/data/universities";
-import { scholarships } from "@/server/data/scholarships";
-import { articles } from "@/server/data/articles";
+import { countryRepository } from "@/server/repositories/countryRepository";
+import { universityRepository } from "@/server/repositories/universityRepository";
+import { scholarshipRepository } from "@/server/repositories/scholarshipRepository";
+import { articleRepository } from "@/server/repositories/articleRepository";
 import { PROGRAM_LEVEL_LABELS } from "@/server/types";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteConfig.url.replace(/\/$/, "");
   const now = new Date();
+
+  const [countries, universities, scholarships, articles] = await Promise.all([
+    countryRepository.findAll(),
+    universityRepository.findAll(),
+    scholarshipRepository.findActive(),
+    articleRepository.findAll(),
+  ]);
 
   const staticRoutes: MetadataRoute.Sitemap = ([
     { url: `${base}/`, priority: 1, changeFrequency: "daily" },
@@ -40,18 +47,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "weekly",
   }));
 
-  const scholarshipRoutes: MetadataRoute.Sitemap = scholarships
-    .filter((s) => s.isActive)
-    .map((s) => ({
-      url: `${base}/hoc-bong/${s.slug}`,
-      lastModified: now,
-      priority: 0.7,
-      changeFrequency: "weekly",
-    }));
+  const scholarshipRoutes: MetadataRoute.Sitemap = scholarships.map((s) => ({
+    url: `${base}/hoc-bong/${s.slug}`,
+    lastModified: now,
+    priority: 0.7,
+    changeFrequency: "weekly",
+  }));
 
   const articleRoutes: MetadataRoute.Sitemap = articles.map((a) => ({
     url: `${base}/tin-tuc/${a.slug}`,
-    lastModified: new Date(a.publishedAt),
+    lastModified: a.updatedAt ? new Date(a.updatedAt) : new Date(a.publishedAt),
     priority: 0.6,
     changeFrequency: "monthly",
   }));

@@ -1,0 +1,160 @@
+// Prisma schema — bám theo thiết kế DB mục 6 của SRS/SDD.
+// Tham chiếu giữa các bảng dùng slug (String) thay vì FK để khớp với
+// domain types hiện có (src/server/types.ts); trang public đã xử lý
+// graceful khi lookup không tìm thấy.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Country {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  description     String
+  highlights      String[]
+  universityCount Int
+  avgTuition      String
+  workRights      String
+  visaRate        String
+  displayOrder    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("countries")
+}
+
+model University {
+  id                    String   @id @default(cuid())
+  countrySlug           String
+  name                  String
+  slug                  String   @unique
+  city                  String
+  ranking               Int?
+  rankingSource         String
+  tuitionMin            Int
+  tuitionMax            Int
+  description           String // HTML
+  admissionRequirements String[]
+  englishRequirements   String
+  livingCost            String
+  dormitoryInfo         String
+  isFeatured            Boolean  @default(false)
+  majors                String[]
+  programs              Json     @default("[]") // Program[] — {name, level, durationMonths, tuitionPerYear}
+  faqs                  Json     @default("[]") // {question, answer}[]
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([countrySlug])
+  @@map("universities")
+}
+
+model Scholarship {
+  id             String   @id @default(cuid())
+  universitySlug String?
+  countrySlug    String?
+  name           String
+  slug           String   @unique
+  value          String
+  conditions     String[]
+  deadline       String // ISO date yyyy-mm-dd
+  description    String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("scholarships")
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  category    String
+  title       String
+  slug        String   @unique
+  excerpt     String
+  content     String // HTML
+  author      String
+  publishedAt String // ISO date yyyy-mm-dd
+  readMinutes Int
+  // SEO fields — nếu bỏ trống, trang public fallback về title/excerpt
+  metaTitle       String?
+  metaDescription String?
+  coverImage      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@map("articles")
+}
+
+model Testimonial {
+  id             String   @id @default(cuid())
+  studentName    String
+  universityName String
+  countrySlug    String
+  program        String
+  content        String
+  scholarship    String?
+  year           Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("testimonials")
+}
+
+model Faq {
+  id           String   @id @default(cuid())
+  question     String
+  answer       String
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("faqs")
+}
+
+model Lead {
+  id                String     @id @default(cuid())
+  fullName          String
+  dateOfBirth       String // ISO date yyyy-mm-dd
+  gender            String // male | female | other
+  email             String
+  phone             String
+  city              String
+  currentSchool     String?
+  gpa               Float?
+  languageLevel     String?
+  desiredCountry    String? // country slug
+  desiredUniversity String? // university slug
+  major             String?
+  intakeTerm        String?
+  budget            String?
+  note              String?
+  status            String     @default("new") // LeadStatus pipeline
+  sourcePage        String?
+  notes             LeadNote[]
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@map("leads")
+}
+
+model LeadNote {
+  id             String   @id @default(cuid())
+  leadId         String
+  lead           Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  note           String
+  statusChangeTo String?
+  createdAt      DateTime @default(now())
+
+  @@index([leadId])
+  @@map("lead_notes")
+}

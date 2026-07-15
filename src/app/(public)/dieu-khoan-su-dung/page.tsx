@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto px-4 py-10">
       <Breadcrumb items={[{ label: "Điều khoản sử dụng" }]} />
       <h1 className="mt-8 text-3xl font-extrabold text-slate-900">
         Điều khoản sử dụng

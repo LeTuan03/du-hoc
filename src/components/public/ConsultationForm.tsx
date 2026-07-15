@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { usePathname } from "next/navigation";
 import { leadSchema, type LeadInput } from "@/server/validators/lead.schema";
-import { countries } from "@/server/data/countries";
-import { universities } from "@/server/data/universities";
+
+interface SelectOptions {
+  countries: { name: string; slug: string }[];
+  universities: { name: string; slug: string; countrySlug: string }[];
+}
 
 const intakeTerms = [
   "Spring 2027",
@@ -42,12 +46,38 @@ export function ConsultationForm({
     ok: boolean;
     message: string;
   } | null>(null);
+  const [options, setOptions] = useState<SelectOptions>({
+    countries: [],
+    universities: [],
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/v1/options")
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled || !json.success) return;
+        setOptions(json.data);
+        // Option đến sau khi select đã mount (uncontrolled) — áp lại giá trị
+        // prefill để DOM hiển thị đúng lựa chọn thay vì "Chưa xác định"
+        if (prefillCountry) setValue("desiredCountry", prefillCountry);
+        if (prefillUniversity) setValue("desiredUniversity", prefillUniversity);
+      })
+      .catch(() => {
+        // Select vẫn dùng được với lựa chọn "Chưa xác định"
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const {
     register,
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<LeadInput>({
     resolver: zodResolver(leadSchema),
@@ -59,7 +89,7 @@ export function ConsultationForm({
   });
 
   const selectedCountry = watch("desiredCountry");
-  const universityOptions = universities.filter(
+  const universityOptions = options.universities.filter(
     (u) => !selectedCountry || u.countrySlug === selectedCountry,
   );
 
@@ -109,8 +139,8 @@ export function ConsultationForm({
   if (result?.ok) {
     return (
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center animate-fade-in">
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-500 text-3xl text-white">
-          ✓
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-500 text-white">
+          <Check size={32} aria-hidden />
         </div>
         <h3 className="mt-4 text-xl font-bold text-emerald-800">
           Đăng ký thành công!
@@ -281,7 +311,7 @@ export function ConsultationForm({
             {...register("desiredCountry")}
           >
             <option value="">— Chưa xác định —</option>
-            {countries.map((c) => (
+            {options.countries.map((c) => (
               <option key={c.slug} value={c.slug}>
                 {c.name}
               </option>

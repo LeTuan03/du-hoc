@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GraduationCap } from "lucide-react";
 import type { Country } from "@/server/types";
 import { Flag } from "./Flag";
 
@@ -40,7 +41,10 @@ export function CountryCard({ country }: { country: Country }) {
           {country.description}
         </p>
         <div className="mt-3 flex items-center justify-between text-xs font-medium text-slate-500 border-t border-slate-50 pt-3">
-          <span>🎓 {country.universityCount} trường đối tác</span>
+          <span className="flex items-center gap-1.5">
+            <GraduationCap size={14} aria-hidden />
+            {country.universityCount} trường đối tác
+          </span>
           <span className="font-semibold text-emerald-600">
             Visa {country.visaRate}
           </span>

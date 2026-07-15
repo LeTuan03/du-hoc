@@ -110,3 +110,8 @@ body {
     transform: translateX(100%);
   }
 }
+
+/* CKEditor trong admin */
+.ck-editor__editable_inline {
+  min-height: 320px;
+}

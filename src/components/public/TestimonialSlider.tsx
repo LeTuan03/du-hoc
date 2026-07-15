@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Trophy } from "lucide-react";
 import type { Testimonial } from "@/server/types";
 import { Flag } from "./Flag";
 
@@ -39,7 +40,7 @@ export function TestimonialSlider({ items }: { items: Testimonial[] }) {
       onMouseEnter={stop}
       onMouseLeave={start}
     >
-      <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-[var(--shadow-card)] sm:p-10">
+      <div className="mx-auto rounded-3xl bg-white p-8 shadow-[var(--shadow-card)] sm:p-10">
         <svg width="40" height="32" viewBox="0 0 40 32" className="text-[#e8f0fc]" fill="currentColor" aria-hidden>
           <path d="M0 32V20.8C0 9.6 6.4 2.4 17.6 0l2.4 4.8C13.6 7.2 10.4 11.2 10 16h8v16H0zm22 0V20.8C22 9.6 28.4 2.4 39.6 0L42 4.8C35.6 7.2 32.4 11.2 32 16h8v16H22z" transform="scale(0.95)" />
         </svg>
@@ -58,8 +59,9 @@ export function TestimonialSlider({ items }: { items: Testimonial[] }) {
                 {t.program} — {t.universityName} ({t.year})
               </div>
               {t.scholarship && (
-                <div className="mt-1 inline-block rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                  🏆 {t.scholarship}
+                <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                  <Trophy size={11} aria-hidden />
+                  {t.scholarship}
                 </div>
               )}
             </div>

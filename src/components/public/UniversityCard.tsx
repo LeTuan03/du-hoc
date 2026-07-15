@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { Star } from "lucide-react";
 import type { University } from "@/server/types";
-import { getCountryBySlug } from "@/server/data/countries";
+import { countryRepository } from "@/server/repositories/countryRepository";
 import { formatTuitionRange, gradientFor } from "@/lib/format";
 import { Flag } from "./Flag";
 
@@ -15,8 +16,11 @@ const universityCampusImages: Record<string, string> = {
   "new-zealand": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=600&auto=format&fit=crop",
 };
 
-export function UniversityCard({ university }: { university: University }) {
-  const country = getCountryBySlug(university.countrySlug);
+export async function UniversityCard({ university }: { university: University }) {
+  // findAll() được cache theo request — mọi card dùng chung 1 query
+  // thay vì mỗi card một findUnique riêng (N+1)
+  const countries = await countryRepository.findAll();
+  const country = countries.find((c) => c.slug === university.countrySlug);
   const initials = university.name
     .split(" ")
     .filter((w) => /^[A-Z]/.test(w))
@@ -46,8 +50,9 @@ export function UniversityCard({ university }: { university: University }) {
           </span>
         )}
         {university.isFeatured && (
-          <span className="absolute bottom-3 right-3 rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
-            ⭐ Nổi bật
+          <span className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
+            <Star size={11} className="fill-[#f5c451] text-[#f5c451]" aria-hidden />
+            Nổi bật
           </span>
         )}
       </div>

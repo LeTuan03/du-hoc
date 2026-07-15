@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PROGRAM_LEVEL_LABELS, type ProgramLevel } from "@/server/types";
-import { universities } from "@/server/data/universities";
+import { universityRepository } from "@/server/repositories/universityRepository";
 import { UniversityCard } from "@/components/public/UniversityCard";
 import { Breadcrumb } from "@/components/public/Breadcrumb";
 import { ConsultationForm } from "@/components/public/ConsultationForm";
@@ -34,6 +34,7 @@ export default async function ProgramLevelPage({
   const label = PROGRAM_LEVEL_LABELS[level as ProgramLevel];
   if (!label) notFound();
 
+  const universities = await universityRepository.findAll();
   const matched = universities.filter((u) =>
     u.programs.some((p) => p.level === level),
   );
@@ -60,7 +61,7 @@ export default async function ProgramLevelPage({
         ))}
       </div>
 
-      <div className="mx-auto mt-16 max-w-3xl rounded-3xl bg-white p-6 shadow-[var(--shadow-card-hover)] ring-1 ring-slate-100 sm:p-8">
+      <div className="mx-auto mt-16 rounded-3xl bg-white p-6 shadow-[var(--shadow-card-hover)] ring-1 ring-slate-100 sm:p-8">
         <h2 className="text-2xl font-extrabold text-slate-900">
           Tư vấn lộ trình bậc {label}
         </h2>

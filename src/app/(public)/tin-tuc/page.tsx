@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getArticles } from "@/server/data/articles";
+import { articleRepository } from "@/server/repositories/articleRepository";
 import { ARTICLE_CATEGORY_LABELS } from "@/server/types";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { Breadcrumb } from "@/components/public/Breadcrumb";
@@ -19,7 +19,7 @@ export default async function NewsPage({
   searchParams: Promise<{ danh_muc?: string }>;
 }) {
   const { danh_muc } = await searchParams;
-  const articles = getArticles(danh_muc);
+  const articles = await articleRepository.findAll(danh_muc);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">

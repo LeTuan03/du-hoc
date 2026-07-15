@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PROGRAM_LEVEL_LABELS, type ProgramLevel } from "@/server/types";
-import { universities } from "@/server/data/universities";
+import { universityRepository } from "@/server/repositories/universityRepository";
 import { Breadcrumb } from "@/components/public/Breadcrumb";
 import { SectionHeading } from "@/components/public/SectionHeading";
 
@@ -32,7 +32,8 @@ const levelIcons: Record<ProgramLevel, string> = {
   "chuyen-tiep": "🔄",
 };
 
-export default function ProgramsPage() {
+export default async function ProgramsPage() {
+  const universities = await universityRepository.findAll();
   const countByLevel = (level: ProgramLevel) =>
     universities.filter((u) => u.programs.some((p) => p.level === level)).length;
 
