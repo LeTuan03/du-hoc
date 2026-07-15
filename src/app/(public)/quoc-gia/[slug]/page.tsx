@@ -33,6 +33,17 @@ export async function generateMetadata({
   };
 }
 
+const countryImages: Record<string, string> = {
+  my: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1200&auto=format&fit=crop",
+  canada: "https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?q=80&w=1200&auto=format&fit=crop",
+  uc: "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?q=80&w=1200&auto=format&fit=crop",
+  anh: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?q=80&w=1200&auto=format&fit=crop",
+  "han-quoc": "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1200&auto=format&fit=crop",
+  "nhat-ban": "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=1200&auto=format&fit=crop",
+  singapore: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?q=80&w=1200&auto=format&fit=crop",
+  "new-zealand": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=1200&auto=format&fit=crop",
+};
+
 export default async function CountryDetailPage({
   params,
 }: {
@@ -66,7 +77,13 @@ export default async function CountryDetailPage({
       <section
         className={`relative overflow-hidden bg-gradient-to-br ${gradientFor(slug)} text-white`}
       >
-        <div className="absolute inset-0 bg-black/20" />
+        <img
+          src={countryImages[slug] || "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=1200&auto=format&fit=crop"}
+          alt={`Cảnh quan ${country.name}`}
+          referrerPolicy="no-referrer"
+          className="absolute inset-0 h-full w-full object-cover mix-blend-overlay opacity-25 pointer-events-none"
+        />
+        <div className="absolute inset-0 bg-black/10" />
         <div className="relative mx-auto max-w-7xl px-4 py-14 sm:py-20">
           <Breadcrumb
             items={[

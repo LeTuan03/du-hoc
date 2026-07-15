@@ -39,6 +39,17 @@ export async function generateMetadata({
   };
 }
 
+const universityCampusImages: Record<string, string> = {
+  my: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1200&auto=format&fit=crop",
+  canada: "https://images.unsplash.com/photo-1564981797816-1043664bf78d?q=80&w=1200&auto=format&fit=crop",
+  uc: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200&auto=format&fit=crop",
+  anh: "https://images.unsplash.com/photo-1460881680858-30d872d5b530?q=80&w=1200&auto=format&fit=crop",
+  "han-quoc": "https://images.unsplash.com/photo-1607242792481-37f27e1ef14e?q=80&w=1200&auto=format&fit=crop",
+  "nhat-ban": "https://images.unsplash.com/photo-1528164344705-47542687000d?q=80&w=1200&auto=format&fit=crop",
+  singapore: "https://images.unsplash.com/photo-1517502884422-41eaaced0168?q=80&w=1200&auto=format&fit=crop",
+  "new-zealand": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1200&auto=format&fit=crop",
+};
+
 export default async function UniversityDetailPage({
   params,
 }: {
@@ -182,9 +193,15 @@ export default async function UniversityDetailPage({
 
       {/* Banner */}
       <section
-        className={`relative bg-gradient-to-br ${gradientFor(university.countrySlug)} text-white`}
+        className={`relative overflow-hidden bg-gradient-to-br ${gradientFor(university.countrySlug)} text-white`}
       >
-        <div className="absolute inset-0 bg-black/25" />
+        <img
+          src={universityCampusImages[university.countrySlug] || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1200&auto=format&fit=crop"}
+          alt={`Khuôn viên ${university.name}`}
+          referrerPolicy="no-referrer"
+          className="absolute inset-0 h-full w-full object-cover mix-blend-overlay opacity-25 pointer-events-none"
+        />
+        <div className="absolute inset-0 bg-black/15" />
         <div className="relative mx-auto max-w-7xl px-4 py-12 sm:py-16">
           <Breadcrumb
             items={[

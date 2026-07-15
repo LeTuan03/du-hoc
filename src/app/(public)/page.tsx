@@ -18,6 +18,7 @@ import { FaqAccordion } from "@/components/public/FaqAccordion";
 import { ConsultationForm } from "@/components/public/ConsultationForm";
 import { Reveal } from "@/components/public/Reveal";
 import { JsonLd } from "@/components/public/JsonLd";
+import heroStudents from "@/assets/images/hero_students_1784108044388.jpg";
 
 export const revalidate = 3600;
 
@@ -109,25 +110,27 @@ export default function HomePage() {
           {/* Visual bên phải */}
           <div className="relative hidden lg:block animate-fade-in">
             <div className="relative mx-auto aspect-square max-w-md">
-              <div className="absolute inset-8 rounded-full bg-white/5 ring-1 ring-white/20" />
-              <div className="absolute inset-20 rounded-full bg-white/5 ring-1 ring-white/20" />
-              <div className="absolute inset-0 grid place-items-center">
-                <span className="text-[120px] drop-shadow-2xl" aria-hidden>
-                  🎓
-                </span>
+              <div className="absolute inset-4 overflow-hidden rounded-3xl bg-slate-100 shadow-2xl border-4 border-white/10 ring-1 ring-white/20">
+                <img
+                  src={heroStudents.src}
+                  alt="Du học sinh thành công tại GlobalEdu"
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover transition duration-500 hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#123a7a]/50 via-transparent to-transparent" />
               </div>
               {/* Floating cards */}
-              <div className="absolute left-0 top-10 rounded-2xl bg-white p-4 text-slate-900 shadow-xl">
+              <div className="absolute -left-4 top-10 rounded-2xl bg-white/95 backdrop-blur p-4 text-slate-900 shadow-xl ring-1 ring-black/5 transition duration-300 hover:-translate-y-1">
                 <p className="text-2xl font-extrabold text-[#1e4fa3]">95%</p>
-                <p className="text-xs font-medium text-slate-500">Tỷ lệ đậu visa</p>
+                <p className="text-xs font-semibold text-slate-500">Tỷ lệ đậu visa</p>
               </div>
-              <div className="absolute right-0 top-32 rounded-2xl bg-white p-4 text-slate-900 shadow-xl">
+              <div className="absolute -right-4 top-32 rounded-2xl bg-white/95 backdrop-blur p-4 text-slate-900 shadow-xl ring-1 ring-black/5 transition duration-300 hover:-translate-y-1">
                 <p className="text-2xl font-extrabold text-amber-600">200+</p>
-                <p className="text-xs font-medium text-slate-500">Suất học bổng/năm</p>
+                <p className="text-xs font-semibold text-slate-500">Suất học bổng/năm</p>
               </div>
-              <div className="absolute bottom-10 left-8 rounded-2xl bg-white p-4 text-slate-900 shadow-xl">
+              <div className="absolute bottom-6 left-4 rounded-2xl bg-white/95 backdrop-blur p-4 text-slate-900 shadow-xl ring-1 ring-black/5 transition duration-300 hover:-translate-y-1">
                 <p className="text-2xl font-extrabold text-emerald-600">12</p>
-                <p className="text-xs font-medium text-slate-500">Quốc gia đối tác</p>
+                <p className="text-xs font-semibold text-slate-500">Quốc gia đối tác</p>
               </div>
             </div>
           </div>
