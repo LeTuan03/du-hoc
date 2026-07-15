@@ -42,9 +42,8 @@ export default function AdminLoginPage() {
     <div className="grid min-h-screen place-items-center bg-slate-100 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center">
-          <span className="inline-grid h-14 w-14 place-items-center rounded-2xl bg-[#1e4fa3] text-2xl font-extrabold text-white">
-            G
-          </span>
+          <img src="/images/logo.svg" alt="Logo" className="inline-grid h-14 w-14 place-items-center" />
+
           <h1 className="mt-4 text-2xl font-extrabold text-slate-900">
             GlobalEdu Admin
           </h1>
@@ -90,10 +89,6 @@ export default function AdminLoginPage() {
             <Button type="primary" htmlType="submit" block loading={loading}>
               Đăng nhập
             </Button>
-
-            <p className="mt-4 text-center text-xs text-slate-400">
-              Mặc định (dev): admin@duhoc.edu.vn / Admin@123456
-            </p>
           </Form>
         </Card>
       </div>

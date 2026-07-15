@@ -29,7 +29,7 @@ import "ckeditor5/ckeditor5.css";
 
 /**
  * Trình soạn thảo bài viết. Ảnh chèn trong bài được upload lên
- * /api/v1/uploads (lưu public/uploads, DB chỉ giữ path) qua SimpleUploadAdapter.
+ * /api/v1/uploads (Supabase Storage, DB giữ URL ảnh) qua SimpleUploadAdapter.
  */
 export default function CKEditorInner({
   value,

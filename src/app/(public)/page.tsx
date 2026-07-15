@@ -23,15 +23,48 @@ import heroStudents from "@/assets/images/hero_students_1784108044388.jpg";
 
 export const revalidate = 3600;
 
-const programLevelIcons: Record<ProgramLevel, string> = {
-  "dai-hoc": "🎓",
-  "sau-dai-hoc": "📚",
-  "cao-dang": "🏫",
-  "thac-si": "👨‍🎓",
-  "tien-si": "🔬",
-  "du-bi-dai-hoc": "🚀",
-  "chuyen-tiep": "🔄",
-};
+// Thứ tự theo lộ trình học tập, kèm mô tả ngắn cho từng bậc
+const programPathway: {
+  level: ProgramLevel;
+  description: string;
+  duration: string;
+}[] = [
+  {
+    level: "du-bi-dai-hoc",
+    description: "Củng cố ngoại ngữ và kiến thức nền trước khi vào chính khóa",
+    duration: "6–12 tháng",
+  },
+  {
+    level: "cao-dang",
+    description: "Thiên về thực hành, học phí thấp, dễ liên thông lên đại học",
+    duration: "2–3 năm",
+  },
+  {
+    level: "chuyen-tiep",
+    description: "Bắt đầu tại Việt Nam, nhận bằng tốt nghiệp của trường nước ngoài",
+    duration: "2+2 · 1+3",
+  },
+  {
+    level: "dai-hoc",
+    description: "Chương trình cử nhân tại hơn 500 trường đối tác",
+    duration: "3–4 năm",
+  },
+  {
+    level: "sau-dai-hoc",
+    description: "Văn bằng và chứng chỉ sau đại học ngắn hạn",
+    duration: "8–12 tháng",
+  },
+  {
+    level: "thac-si",
+    description: "Nâng cao chuyên môn, mở rộng cơ hội ở lại làm việc",
+    duration: "1–2 năm",
+  },
+  {
+    level: "tien-si",
+    description: "Nghiên cứu chuyên sâu với nhiều học bổng toàn phần",
+    duration: "3–5 năm",
+  },
+];
 
 export default async function HomePage() {
   const [countries, universities, activeScholarships, articles, testimonials, globalFaqs] =
@@ -214,9 +247,9 @@ export default async function HomePage() {
 
       {/* ===== CHƯƠNG TRÌNH HỌC ===== */}
       <section className="bg-[#123a7a] py-16 text-white sm:py-20">
-        <div className="mx-auto max-w-7xl px-4">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 lg:grid-cols-[2fr_3fr] lg:items-center lg:gap-16">
           <Reveal>
-            <div className="mx-auto max-w-2xl text-center">
+            <div>
               <p className="text-sm font-bold uppercase tracking-widest text-[#f5c451]">
                 Chương trình học
               </p>
@@ -227,27 +260,47 @@ export default async function HomePage() {
                 Từ dự bị đại học đến tiến sĩ — chúng tôi thiết kế lộ trình phù
                 hợp với học lực và ngân sách của bạn.
               </p>
+              <Link
+                href="/chuong-trinh-hoc"
+                className="mt-8 inline-block rounded-lg border-2 border-white/40 px-5 py-2.5 text-sm font-bold transition hover:border-white hover:bg-white/10"
+              >
+                Xem tất cả chương trình →
+              </Link>
             </div>
           </Reveal>
-          <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-7">
-            {(Object.keys(PROGRAM_LEVEL_LABELS) as ProgramLevel[]).map(
-              (level, i) => (
-                <Reveal key={level} delay={i * 50}>
+          <Reveal delay={100}>
+            <ul className="divide-y divide-white/10 border-y border-white/10">
+              {programPathway.map(({ level, description, duration }, i) => (
+                <li key={level}>
                   <Link
                     href={`/chuong-trinh-hoc/${level}`}
-                    className="flex h-full flex-col items-center gap-2 rounded-2xl bg-white/10 p-5 text-center backdrop-blur transition hover:-translate-y-1 hover:bg-white/20"
+                    className="group flex items-center gap-5 py-4"
                   >
-                    <span className="text-3xl" aria-hidden>
-                      {programLevelIcons[level]}
+                    <span className="w-7 shrink-0 text-sm font-bold text-[#f5c451]/60">
+                      {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="text-sm font-bold">
-                      {PROGRAM_LEVEL_LABELS[level]}
+                    <span className="flex-1">
+                      <span className="font-bold transition group-hover:text-[#f5c451]">
+                        {PROGRAM_LEVEL_LABELS[level]}
+                      </span>
+                      <span className="mt-0.5 block text-sm text-blue-200/80">
+                        {description}
+                      </span>
+                    </span>
+                    <span className="hidden shrink-0 text-sm text-blue-200/60 sm:block">
+                      {duration}
+                    </span>
+                    <span
+                      className="shrink-0 text-blue-200/60 transition group-hover:translate-x-1 group-hover:text-[#f5c451]"
+                      aria-hidden
+                    >
+                      →
                     </span>
                   </Link>
-                </Reveal>
-              ),
-            )}
-          </div>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
         </div>
       </section>
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { Breadcrumb } from "@/components/public/Breadcrumb";
 import { ConsultationForm } from "@/components/public/ConsultationForm";
 import { siteConfig } from "@/lib/site";
@@ -24,64 +25,63 @@ export default function ContactPage() {
 
       <div className="mt-10 grid gap-10 lg:grid-cols-2">
         <div className="space-y-5">
-          {[
-            {
-              icon: "📞",
-              title: "Hotline",
-              content: siteConfig.hotline,
-              href: siteConfig.hotlineHref,
-              note: siteConfig.workingHours,
-            },
-            {
-              icon: "✉️",
-              title: "Email",
-              content: siteConfig.email,
-              href: `mailto:${siteConfig.email}`,
-              note: "Phản hồi trong 24 giờ làm việc",
-            },
-            {
-              icon: "📍",
-              title: "Văn phòng TP.HCM",
-              content: siteConfig.address,
-              note: "Đặt lịch trước để được phục vụ tốt nhất",
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="flex items-start gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
-            >
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#e8f0fc] text-xl">
-                {item.icon}
-              </span>
-              <div>
-                <h2 className="font-bold text-slate-900">{item.title}</h2>
-                {item.href ? (
-                  <a
-                    href={item.href}
-                    className="mt-0.5 block font-semibold text-[#1e4fa3] hover:underline"
-                  >
-                    {item.content}
-                  </a>
-                ) : (
-                  <p className="mt-0.5 font-semibold text-slate-700">
-                    {item.content}
-                  </p>
-                )}
-                <p className="mt-1 text-xs text-slate-500">{item.note}</p>
+          <div className="divide-y divide-slate-100 rounded-2xl border border-slate-100 bg-white shadow-sm">
+            {[
+              {
+                icon: Phone,
+                title: "Hotline",
+                content: siteConfig.hotline,
+                href: siteConfig.hotlineHref,
+                note: siteConfig.workingHours,
+              },
+              {
+                icon: Mail,
+                title: "Email",
+                content: siteConfig.email,
+                href: `mailto:${siteConfig.email}`,
+                note: "Phản hồi trong 24 giờ làm việc",
+              },
+              {
+                icon: MapPin,
+                title: "Văn phòng",
+                content: siteConfig.address,
+                note: "Đặt lịch trước để được phục vụ tốt nhất",
+              },
+            ].map((item) => (
+              <div key={item.title} className="flex items-start gap-4 p-5">
+                <item.icon
+                  size={20}
+                  className="mt-0.5 shrink-0 text-[#1e4fa3]"
+                  aria-hidden
+                />
+                <div>
+                  <h2 className="font-bold text-slate-900">{item.title}</h2>
+                  {item.href ? (
+                    <a
+                      href={item.href}
+                      className="mt-0.5 block font-semibold text-[#1e4fa3] hover:underline"
+                    >
+                      {item.content}
+                    </a>
+                  ) : (
+                    <p className="mt-0.5 font-semibold text-slate-700">
+                      {item.content}
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs text-slate-500">{item.note}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
-          {/* Bản đồ placeholder */}
-          <div className="grid h-64 place-items-center rounded-2xl bg-slate-100 text-slate-400">
-            <div className="text-center">
-              <p className="text-3xl" aria-hidden>
-                🗺️
-              </p>
-              <p className="mt-2 text-sm font-medium">
-                Bản đồ văn phòng (nhúng Google Maps khi có địa chỉ chính thức)
-              </p>
-            </div>
+          <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+            <iframe
+              title="Bản đồ văn phòng GlobalEdu"
+              src={`https://www.google.com/maps?q=${encodeURIComponent(siteConfig.address)}&output=embed`}
+              className="h-64 w-full"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
           </div>
         </div>
 

@@ -81,9 +81,6 @@ export default function AboutPage() {
             key={v.title}
             className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
           >
-            <span className="text-3xl" aria-hidden>
-              {v.icon}
-            </span>
             <h3 className="mt-3 font-bold text-slate-900">{v.title}</h3>
             <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
               {v.desc}

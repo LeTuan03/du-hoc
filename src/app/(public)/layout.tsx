@@ -2,6 +2,7 @@ import { Header } from "@/components/public/Header";
 import { Footer } from "@/components/public/Footer";
 import Link from "next/link";
 import { siteConfig } from "@/lib/site";
+import { Edit, Phone } from "lucide-react";
 
 export default function PublicLayout({
   children,
@@ -25,14 +26,14 @@ export default function PublicLayout({
           aria-label="Gọi hotline"
           className="grid h-12 w-12 place-items-center rounded-full bg-emerald-500 text-xl text-white shadow-lg"
         >
-          📞
+          <Phone size={20} />
         </a>
         <Link
           href="/dang-ky-tu-van"
           aria-label="Đăng ký tư vấn"
           className="grid h-12 w-12 place-items-center rounded-full bg-[#f5c451] text-xl shadow-lg"
         >
-          ✏️
+          <Edit size={20} />
         </Link>
       </div>
     </>

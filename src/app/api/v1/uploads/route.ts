@@ -3,10 +3,12 @@ import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import { getSession } from "@/server/auth";
+import { getSupabaseAdmin, STORAGE_BUCKET } from "@/server/supabase";
 
 /**
  * POST /api/v1/uploads — admin only.
- * Lưu ảnh vào public/uploads/, DB chỉ lưu path (/uploads/xxx.ext).
+ * Ưu tiên upload lên Supabase Storage (DB lưu URL public của ảnh);
+ * khi chưa cấu hình Supabase env → fallback lưu public/uploads/ như cũ.
  * Field "upload" theo chuẩn CKEditor SimpleUploadAdapter; response { url }.
  */
 
@@ -54,11 +56,45 @@ export async function POST(req: NextRequest) {
   }
 
   const filename = `${Date.now()}-${randomUUID().slice(0, 8)}${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(filename, buffer, {
+        contentType: file.type,
+        cacheControl: "31536000",
+      });
+    if (error) {
+      console.error("Supabase Storage upload error:", error);
+      return NextResponse.json(
+        { error: { message: "Tải ảnh lên storage thất bại" } },
+        { status: 500 },
+      );
+    }
+    const { data } = supabase.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(filename);
+    return NextResponse.json({ url: data.publicUrl });
+  }
+
+  // Serverless (Vercel/Netlify) có filesystem read-only → báo thiếu cấu hình
+  // thay vì lỗi ghi file khó hiểu.
+  if (process.env.VERCEL || process.env.NETLIFY) {
+    return NextResponse.json(
+      {
+        error: {
+          message:
+            "Chưa cấu hình Supabase Storage (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)",
+        },
+      },
+      { status: 500 },
+    );
+  }
+
   await fs.mkdir(UPLOAD_DIR, { recursive: true });
-  await fs.writeFile(
-    path.join(UPLOAD_DIR, filename),
-    Buffer.from(await file.arrayBuffer()),
-  );
+  await fs.writeFile(path.join(UPLOAD_DIR, filename), buffer);
 
   return NextResponse.json({ url: `/uploads/${filename}` });
 }

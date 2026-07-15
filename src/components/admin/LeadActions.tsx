@@ -81,7 +81,7 @@ export function LeadActions({
             không thể chuyển tiếp.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <Select
               placeholder="— Chọn trạng thái mới (theo pipeline) —"
               value={newStatus}
@@ -113,7 +113,7 @@ export function LeadActions({
       </Card>
 
       <Card title="Thêm ghi chú chăm sóc">
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           <Input.TextArea
             rows={3}
             value={note}

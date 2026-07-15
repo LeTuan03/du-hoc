@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { CircleDollarSign, GraduationCap } from "lucide-react";
 import type { Scholarship } from "@/server/types";
 import { countryRepository } from "@/server/repositories/countryRepository";
 import { daysUntil, formatDate } from "@/lib/format";
@@ -14,45 +13,42 @@ export async function ScholarshipCard({ scholarship }: { scholarship: Scholarshi
   return (
     <Link
       href={`/hoc-bong/${scholarship.slug}`}
-      className="group flex flex-col rounded-2xl border border-amber-100 bg-gradient-to-b from-amber-50/60 to-white p-5 shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
+      className="group flex flex-col rounded-2xl bg-white p-5 shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
     >
-      <div className="flex items-start justify-between gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#f5c451] text-[#123a7a] shadow-sm">
-          <GraduationCap size={22} aria-hidden />
-        </span>
+      <div className="flex items-center justify-between gap-3 text-xs">
         {country && (
-          <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+          <span className="flex items-center gap-1.5 font-semibold text-slate-500">
             <Flag country={country.slug} className="h-3 w-[18px] rounded-[2px]" />
             {country.name}
           </span>
         )}
+        <span
+          className={`font-bold ${
+            remaining <= 30 ? "text-red-600" : "text-slate-400"
+          }`}
+        >
+          {remaining > 0 ? `Còn ${remaining} ngày` : "Đã hết hạn"}
+        </span>
       </div>
 
       <h3 className="mt-3 font-bold leading-snug text-slate-900 group-hover:text-[#1e4fa3]">
         {scholarship.name}
       </h3>
 
-      <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-amber-700">
-        <CircleDollarSign size={15} className="shrink-0" aria-hidden />
+      <p className="mt-3 border-l-2 border-[#f5c451] pl-3 text-sm font-bold text-amber-700">
         {scholarship.value}
       </p>
 
-      <p className="mt-2 line-clamp-2 text-sm text-slate-600">
+      <p className="mb-4 mt-3 line-clamp-2 text-sm text-slate-600">
         {scholarship.description}
       </p>
 
-      <div className="mt-auto flex items-center justify-between border-t border-amber-100 pt-3 text-xs">
-        <span className="mt-2 text-slate-500">
-          Hạn: <strong>{formatDate(scholarship.deadline)}</strong>
+      <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-3">
+        <span className="text-xs text-slate-500">
+          Hạn: <strong className="text-slate-700">{formatDate(scholarship.deadline)}</strong>
         </span>
-        <span
-          className={`mt-2 rounded-full px-2.5 py-1 font-bold ${
-            remaining <= 30
-              ? "bg-red-50 text-red-600"
-              : "bg-emerald-50 text-emerald-700"
-          }`}
-        >
-          {remaining > 0 ? `Còn ${remaining} ngày` : "Đã hết hạn"}
+        <span className="text-sm font-semibold text-[#1e4fa3] transition group-hover:translate-x-0.5">
+          Chi tiết →
         </span>
       </div>
     </Link>

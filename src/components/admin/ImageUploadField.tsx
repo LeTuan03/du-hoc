@@ -4,8 +4,8 @@ import { App, Button, Upload } from "antd";
 import { ImagePlus, Trash2 } from "lucide-react";
 
 /**
- * Upload ảnh lên /api/v1/uploads (lưu vào public/uploads) —
- * value là path ảnh (/uploads/xxx.jpg), tương thích Form.Item antd.
+ * Upload ảnh lên /api/v1/uploads (Supabase Storage; dev chưa cấu hình
+ * Supabase thì lưu public/uploads) — value là URL ảnh, tương thích Form.Item antd.
  */
 export function ImageUploadField({
   value,
@@ -61,8 +61,8 @@ export function ImageUploadField({
         )}
       </div>
       <p className="mt-1 text-xs text-slate-400">
-        JPG/PNG/WebP tối đa 5MB — ảnh lưu tại /uploads, khuyến nghị 1200×630
-        cho ảnh chia sẻ mạng xã hội.
+        JPG/PNG/WebP tối đa 5MB — khuyến nghị 1200×630 cho ảnh chia sẻ mạng
+        xã hội.
       </p>
     </div>
   );
