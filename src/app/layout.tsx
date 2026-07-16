@@ -52,6 +52,9 @@ export const metadata: Metadata = {
     title: siteConfig.fullName,
     description: siteConfig.description,
   },
+  verification: {
+    google: 'qugqN4Pfqv8re0526S67cOlEColV-NRq9aTdt0agAG8',
+  },
   robots: { index: true, follow: true },
 };
 
