@@ -117,7 +117,7 @@ export default async function ArticleDetailPage({
         }}
       />
 
-      <article className="mx-auto px-4 py-10">
+      <article className="mx-auto max-w-2xl px-4 py-10">
         <Breadcrumb
           items={[
             { label: "Tin tức", href: "/tin-tuc" },
