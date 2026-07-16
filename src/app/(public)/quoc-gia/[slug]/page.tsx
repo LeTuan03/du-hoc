@@ -80,13 +80,13 @@ export default async function CountryDetailPage({
 
       {/* Banner */}
       <section
-        className={`relative overflow-hidden bg-gradient-to-br ${gradientFor(slug)} text-white`}
+        className={`relative overflow-hidden text-white`}
       >
         <img
           src={countryImages[slug] || "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=1200&auto=format&fit=crop"}
           alt={`Cảnh quan ${country.name}`}
           referrerPolicy="no-referrer"
-          className="absolute inset-0 h-full w-full object-cover mix-blend-overlay opacity-25 pointer-events-none"
+          className="absolute inset-0 h-full w-full object-cover pointer-events-none"
         />
         <div className="absolute inset-0 bg-black/10" />
         <div className="relative mx-auto max-w-7xl px-4 py-14 sm:py-20">

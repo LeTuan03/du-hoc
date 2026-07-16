@@ -192,13 +192,13 @@ export default async function UniversityDetailPage({
 
       {/* Banner */}
       <section
-        className={`relative overflow-hidden bg-gradient-to-br ${gradientFor(university.countrySlug)} text-white`}
+        className={`relative overflow-hidden text-white`}
       >
         <img
           src={universityCampusImages[university.countrySlug] || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1200&auto=format&fit=crop"}
           alt={`Khuôn viên ${university.name}`}
           referrerPolicy="no-referrer"
-          className="absolute inset-0 h-full w-full object-cover mix-blend-overlay opacity-25 pointer-events-none"
+          className="absolute inset-0 h-full w-full object-cover pointer-events-none"
         />
         <div className="absolute inset-0 bg-black/15" />
         <div className="relative mx-auto max-w-7xl px-4 py-12 sm:py-16">
