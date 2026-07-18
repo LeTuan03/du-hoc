@@ -338,7 +338,7 @@ export default async function UniversityDetailPage({
 
       {/* Form prefill trường */}
       <section id="dang-ky" className="bg-slate-50 py-14">
-        <div className="mx-auto px-4">
+        <div className="mx-auto max-w-3xl px-4">
           <div className="rounded-3xl bg-white p-6 shadow-[var(--shadow-card-hover)] sm:p-8">
             <h2 className="text-2xl font-extrabold text-slate-900">
               Đăng ký tư vấn — {university.name}
