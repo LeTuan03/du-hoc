@@ -12,7 +12,7 @@ import { Breadcrumb } from "@/components/public/Breadcrumb";
 import { ConsultationForm } from "@/components/public/ConsultationForm";
 import { Flag } from "@/components/public/Flag";
 import { JsonLd } from "@/components/public/JsonLd";
-import { gradientFor } from "@/lib/format";
+import { siteConfig } from "@/lib/site";
 
 export async function generateStaticParams() {
   const countries = await countryRepository.findAll();
@@ -71,9 +71,9 @@ export default async function CountryDetailPage({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
           itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Trang chủ", item: "/" },
-            { "@type": "ListItem", position: 2, name: "Quốc gia", item: "/quoc-gia" },
-            { "@type": "ListItem", position: 3, name: `Du học ${country.name}` },
+            { "@type": "ListItem", position: 1, name: "Trang chủ", item: siteConfig.url },
+            { "@type": "ListItem", position: 2, name: "Quốc gia", item: `${siteConfig.url}/quoc-gia` },
+            { "@type": "ListItem", position: 3, name: `Du học ${country.name}`, item: `${siteConfig.url}/quoc-gia/${country.slug}` },
           ],
         }}
       />
