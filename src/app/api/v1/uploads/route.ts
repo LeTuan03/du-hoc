@@ -15,12 +15,14 @@ import { getSupabaseAdmin, STORAGE_BUCKET } from "@/server/supabase";
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
-// Không nhận SVG: SVG chứa được <script>/onload → stored XSS khi serve inline
+// Không nhận SVG: SVG chứa được <script>/onload → stored XSS khi serve inline.
+// PDF phục vụ tài liệu hồ sơ du học (học bạ, hộ chiếu, chứng minh tài chính).
 const ALLOWED: Record<string, string> = {
   "image/jpeg": ".jpg",
   "image/png": ".png",
   "image/webp": ".webp",
   "image/gif": ".gif",
+  "application/pdf": ".pdf",
 };
 
 export async function POST(req: NextRequest) {
@@ -44,13 +46,13 @@ export async function POST(req: NextRequest) {
   const ext = ALLOWED[file.type];
   if (!ext) {
     return NextResponse.json(
-      { error: { message: "Chỉ chấp nhận ảnh JPG, PNG, WebP, GIF" } },
+      { error: { message: "Chỉ chấp nhận ảnh JPG, PNG, WebP, GIF hoặc file PDF" } },
       { status: 400 },
     );
   }
   if (file.size > MAX_SIZE) {
     return NextResponse.json(
-      { error: { message: "Ảnh tối đa 5MB" } },
+      { error: { message: "File tối đa 5MB" } },
       { status: 400 },
     );
   }

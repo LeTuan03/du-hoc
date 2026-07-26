@@ -1,10 +1,14 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { cache } from "react";
 import { cookies } from "next/headers";
+import bcrypt from "bcryptjs";
+import { prisma } from "./db";
+import { can, type Permission, type User, type UserRole } from "./types";
 
 /**
- * Phiên admin dạng cookie ký HMAC — đơn giản, không cần DB.
- * Khi mở rộng đa người dùng + RBAC đầy đủ, thay bằng bảng users + JWT
- * theo thiết kế SRS mục 7.2 mà không đổi interface bên ngoài.
+ * Phiên admin: cookie ký HMAC chứa userId, tài khoản lưu ở bảng `users`
+ * (SRS mục 6.2 + 12.1). Vai trò và trạng thái được đọc lại từ DB mỗi request
+ * nên vô hiệu hóa tài khoản có hiệu lực ngay, không cần chờ token hết hạn.
  */
 
 const SESSION_COOKIE = "admin_session";
@@ -18,23 +22,16 @@ function sign(payload: string): string {
   return createHmac("sha256", getSecret()).update(payload).digest("hex");
 }
 
-export function getAdminCredentials(): { email: string; password: string } {
-  return {
-    email: process.env.ADMIN_EMAIL || "admin@duhoc.edu.vn",
-    password: process.env.ADMIN_PASSWORD || "Admin@123456",
-  };
-}
-
-export function createSessionToken(email: string): string {
+export function createSessionToken(userId: string): string {
   const expiresAt = Date.now() + SESSION_TTL_MS;
-  const payload = `${email}|${expiresAt}`;
+  const payload = `${userId}|${expiresAt}`;
   const encoded = Buffer.from(payload).toString("base64url");
   return `${encoded}.${sign(payload)}`;
 }
 
 export function verifySessionToken(token: string | undefined): {
   valid: boolean;
-  email?: string;
+  userId?: string;
 } {
   if (!token) return { valid: false };
   const [encoded, signature] = token.split(".");
@@ -54,16 +51,78 @@ export function verifySessionToken(token: string | undefined): {
     return { valid: false };
   }
 
-  const [email, expiresAt] = payload.split("|");
+  const [userId, expiresAt] = payload.split("|");
   if (!expiresAt || Date.now() > Number(expiresAt)) return { valid: false };
-  return { valid: true, email };
+  return { valid: true, userId };
 }
 
-export async function getSession(): Promise<{ email: string } | null> {
+export interface Session {
+  userId: string;
+  email: string;
+  fullName: string;
+  role: UserRole;
+}
+
+/** cache(): nhiều lời gọi trong cùng một request chỉ truy vấn DB một lần */
+export const getSession = cache(async (): Promise<Session | null> => {
   const store = await cookies();
-  const token = store.get(SESSION_COOKIE)?.value;
-  const result = verifySessionToken(token);
-  return result.valid && result.email ? { email: result.email } : null;
+  const { valid, userId } = verifySessionToken(store.get(SESSION_COOKIE)?.value);
+  if (!valid || !userId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, fullName: true, role: true, status: true },
+  });
+  if (!user || user.status !== "active") return null;
+
+  return {
+    userId: user.id,
+    email: user.email,
+    fullName: user.fullName,
+    role: user.role as UserRole,
+  };
+});
+
+/** Session có quyền `permission` hay không — dùng ở server action, API và RSC */
+export async function sessionCan(permission: Permission): Promise<boolean> {
+  const session = await getSession();
+  return session ? can(session.role, permission) : false;
+}
+
+/** Xác thực email + mật khẩu; trả về user nếu hợp lệ */
+export async function verifyCredentials(
+  email: string,
+  password: string,
+): Promise<User | null> {
+  const row = await prisma.user.findUnique({
+    where: { email: email.trim().toLowerCase() },
+  });
+  // So sánh hash kể cả khi không tìm thấy user để thời gian phản hồi đồng đều,
+  // tránh lộ email nào đã tồn tại qua timing.
+  const hash = row?.passwordHash ?? "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidina";
+  const ok = await bcrypt.compare(password, hash);
+  if (!row || !ok || row.status !== "active") return null;
+
+  await prisma.user.update({
+    where: { id: row.id },
+    data: { lastLoginAt: new Date() },
+  });
+
+  return {
+    id: row.id,
+    fullName: row.fullName,
+    email: row.email,
+    phone: row.phone,
+    avatarUrl: row.avatarUrl,
+    role: row.role as UserRole,
+    status: row.status as User["status"],
+    lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10);
 }
 
 export const sessionCookieOptions = {

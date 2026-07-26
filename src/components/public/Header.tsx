@@ -10,9 +10,10 @@ const navItems = [
   { href: "/", label: "Trang chủ" },
   { href: "/quoc-gia", label: "Quốc gia" },
   { href: "/truong", label: "Trường" },
+  { href: "/tim-nganh-hoc", label: "Tra cứu ngành" },
   { href: "/hoc-bong", label: "Học bổng" },
   { href: "/tin-tuc", label: "Tin tức" },
-  { href: "/cau-chuyen-hoc-vien", label: "Câu chuyện học viên" },
+  { href: "/cau-chuyen-hoc-vien", label: "Câu chuyện" },
   { href: "/gioi-thieu", label: "Giới thiệu" },
   { href: "/lien-he", label: "Liên hệ" },
 ];
@@ -49,9 +50,14 @@ export function Header() {
             <GraduationCap size={14} aria-hidden />
             Tư vấn du học miễn phí — Đồng hành từ hồ sơ đến visa
           </p>
-          <a href={siteConfig.hotlineHref} className="font-semibold hover:text-[#f5c451]">
-            Hotline: {siteConfig.hotline}
-          </a>
+          <span className="flex items-center gap-4">
+            <Link href="/tra-cuu-ho-so" className="hover:text-[#f5c451]">
+              Tra cứu hồ sơ
+            </Link>
+            <a href={siteConfig.hotlineHref} className="font-semibold hover:text-[#f5c451]">
+              Hotline: {siteConfig.hotline}
+            </a>
+          </span>
         </div>
       </div>
 
@@ -132,6 +138,12 @@ export function Header() {
               {item.label}
             </Link>
           ))}
+          <Link
+            href="/tra-cuu-ho-so"
+            className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Tra cứu hồ sơ
+          </Link>
           <Link
             href="/dang-ky-tu-van"
             className="mt-3 block rounded-lg bg-[#f5c451] px-4 py-3 text-center text-sm font-bold text-[#123a7a]"

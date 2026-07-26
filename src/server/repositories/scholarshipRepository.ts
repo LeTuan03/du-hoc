@@ -20,6 +20,44 @@ export const scholarshipRepository = {
     return prisma.scholarship.findUnique({ where: { slug } });
   }),
 
+  /** Học bổng của một trường — dùng ở trang chi tiết trường và API */
+  findByUniversity: cache(async (universitySlug: string): Promise<Scholarship[]> => {
+    return prisma.scholarship.findMany({
+      where: { universitySlug, isActive: true },
+      orderBy: { deadline: "asc" },
+    });
+  }),
+
+  /**
+   * Lọc phục vụ công cụ tra cứu học bổng của ứng viên và API public.
+   * `countrySlug` khớp cả học bổng gắn trực tiếp với quốc gia lẫn học bổng
+   * của các trường thuộc quốc gia đó.
+   */
+  async filter(filter: {
+    country?: string;
+    university?: string;
+    activeOnly?: boolean;
+    universitySlugsInCountry?: string[];
+  }): Promise<Scholarship[]> {
+    return prisma.scholarship.findMany({
+      where: {
+        ...(filter.activeOnly ? { isActive: true } : {}),
+        ...(filter.university ? { universitySlug: filter.university } : {}),
+        ...(filter.country
+          ? {
+              OR: [
+                { countrySlug: filter.country },
+                ...(filter.universitySlugsInCountry?.length
+                  ? [{ universitySlug: { in: filter.universitySlugsInCountry } }]
+                  : []),
+              ],
+            }
+          : {}),
+      },
+      orderBy: { deadline: "asc" },
+    });
+  },
+
   findById(id: string): Promise<Scholarship | null> {
     return prisma.scholarship.findUnique({ where: { id } });
   },

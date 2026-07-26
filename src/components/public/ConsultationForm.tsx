@@ -45,6 +45,7 @@ export function ConsultationForm({
   const [result, setResult] = useState<{
     ok: boolean;
     message: string;
+    code?: string;
   } | null>(null);
   const [options, setOptions] = useState<SelectOptions>({
     countries: [],
@@ -97,14 +98,22 @@ export function ConsultationForm({
     setSubmitting(true);
     setResult(null);
     try {
+      // UTM đọc từ URL hiện tại — đo hiệu quả kênh marketing (SRS mục 13)
+      const params = new URLSearchParams(window.location.search);
       const res = await fetch("/api/v1/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, sourcePage: pathname }),
+        body: JSON.stringify({
+          ...data,
+          sourcePage: pathname,
+          utmSource: params.get("utm_source") ?? "",
+          utmMedium: params.get("utm_medium") ?? "",
+          utmCampaign: params.get("utm_campaign") ?? "",
+        }),
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        setResult({ ok: true, message: json.message });
+        setResult({ ok: true, message: json.message, code: json.data?.code });
         reset();
       } else {
         setResult({
@@ -146,6 +155,29 @@ export function ConsultationForm({
           Đăng ký thành công!
         </h3>
         <p className="mt-2 text-sm text-emerald-700">{result.message}</p>
+
+        {result.code && (
+          <div className="mt-5 rounded-xl border border-emerald-300 bg-white p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+              Mã hồ sơ của bạn
+            </p>
+            <p className="mt-1 text-2xl font-extrabold tracking-wider text-slate-900">
+              {result.code}
+            </p>
+            <p className="mt-2 text-xs text-slate-500">
+              Lưu lại mã này để theo dõi tiến trình hồ sơ bất cứ lúc nào tại
+              trang{" "}
+              <a
+                href="/tra-cuu-ho-so"
+                className="font-semibold text-[#1e4fa3] underline"
+              >
+                Tra cứu hồ sơ
+              </a>
+              .
+            </p>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={() => setResult(null)}

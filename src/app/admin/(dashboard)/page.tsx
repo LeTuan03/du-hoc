@@ -1,10 +1,20 @@
 import Link from "next/link";
-import { CalendarDays, Stamp, UserPlus, Users } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarDays,
+  FileWarning,
+  Stamp,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import { getSession } from "@/server/auth";
 import { leadService } from "@/server/services/leadService";
-import { countryRepository } from "@/server/repositories/countryRepository";
-import { LEAD_STATUS_LABELS, type LeadStatus } from "@/server/types";
+import { reportService } from "@/server/services/reportService";
+import { appointmentRepository } from "@/server/repositories/appointmentRepository";
+import { can, LEAD_STATUS_LABELS, type LeadStatus } from "@/server/types";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DonutChart, FunnelBars, LineChart } from "@/components/admin/Charts";
+import { EmptyState, Panel, StatCard } from "@/components/admin/PageHeader";
 import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -20,166 +30,164 @@ const funnelColors: Record<LeadStatus, string> = {
 };
 
 export default async function AdminDashboardPage() {
-  const [leads, countries] = await Promise.all([
-    leadService.list({}),
-    countryRepository.findAll(),
-  ]);
-  const countryName = (slug: string) =>
-    countries.find((c) => c.slug === slug)?.name;
+  const session = await getSession();
+  const isConsultant = Boolean(session && !can(session.role, "leads.viewAll"));
 
-  const today = new Date();
-  const isSameDay = (iso: string) => {
-    const d = new Date(iso);
-    return (
-      d.getDate() === today.getDate() &&
-      d.getMonth() === today.getMonth() &&
-      d.getFullYear() === today.getFullYear()
-    );
-  };
-  const isSameMonth = (iso: string) => {
-    const d = new Date(iso);
-    return (
-      d.getMonth() === today.getMonth() &&
-      d.getFullYear() === today.getFullYear()
-    );
-  };
+  const [summary, byDay, byCountry, conversion, recentLeads, upcoming] =
+    await Promise.all([
+      reportService.summary(),
+      reportService.leadsByDay(30),
+      reportService.byCountry(),
+      reportService.conversion(),
+      leadService.list({}, session),
+      appointmentRepository.filter({
+        status: "scheduled",
+        from: new Date(),
+        consultantId: isConsultant ? session!.userId : undefined,
+      }),
+    ]);
 
-  const totalLeads = leads.length;
-  const todayLeads = leads.filter((l) => isSameDay(l.createdAt)).length;
-  const monthLeads = leads.filter((l) => isSameMonth(l.createdAt)).length;
-  const submitted = leads.filter((l) =>
-    ["submitted", "visa_approved"].includes(l.status),
-  ).length;
-  const visaApproved = leads.filter((l) => l.status === "visa_approved").length;
-  const visaRate =
-    submitted > 0 ? Math.round((visaApproved / submitted) * 100) : 0;
-
-  // Lead theo ngày — 30 ngày gần nhất.
-  // Key theo giờ ĐỊA PHƯƠNG (không dùng toISOString = UTC) để khớp với
-  // cách tính "Hôm nay" ở stat card phía trên.
-  const localKey = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const days: { key: string; label: string }[] = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    days.push({
-      key: localKey(d),
-      label: `${d.getDate()}/${d.getMonth() + 1}`,
-    });
-  }
-  const byDay = days.map(
-    (day) =>
-      leads.filter((l) => localKey(new Date(l.createdAt)) === day.key).length,
-  );
-
-  // Lead theo quốc gia
-  const byCountry = new Map<string, number>();
-  leads.forEach((l) => {
-    const name = l.desiredCountry
-      ? (countryName(l.desiredCountry) ?? l.desiredCountry)
-      : "Chưa xác định";
-    byCountry.set(name, (byCountry.get(name) ?? 0) + 1);
-  });
-  const countryData = [...byCountry.entries()]
-    .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => b.value - a.value);
-
-  // Funnel theo trạng thái
-  const funnelData = (Object.keys(LEAD_STATUS_LABELS) as LeadStatus[]).map(
-    (status) => ({
-      label: LEAD_STATUS_LABELS[status],
-      value: leads.filter((l) => l.status === status).length,
-      color: funnelColors[status],
-    }),
-  );
-
-  const recentLeads = leads.slice(0, 8);
-
-  const statCards = [
-    { label: "Tổng lead", value: totalLeads, icon: <Users size={18} />, tone: "text-[#1e4fa3]" },
-    { label: "Hôm nay", value: todayLeads, icon: <UserPlus size={18} />, tone: "text-cyan-600" },
-    { label: "Tháng này", value: monthLeads, icon: <CalendarDays size={18} />, tone: "text-violet-600" },
-    { label: "Tỷ lệ đậu visa", value: `${visaRate}%`, icon: <Stamp size={18} />, tone: "text-emerald-600" },
-  ];
+  const funnelData = conversion.funnel.map((f) => ({
+    label: f.label,
+    value: f.count,
+    color: funnelColors[f.status],
+  }));
 
   return (
     <div>
       <h1 className="text-2xl font-extrabold text-slate-900">Dashboard</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Tổng quan hoạt động thu thập và chăm sóc lead
+        Tổng quan pipeline tuyển sinh
+        {session && ` — xin chào ${session.fullName}`}
       </p>
 
-      {/* Stat cards */}
-      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {statCards.map((card) => (
-          <div
-            key={card.label}
-            className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-500">
-                {card.label}
-              </p>
-              <span aria-hidden className={card.tone}>
-                {card.icon}
-              </span>
-            </div>
-            <p className={`mt-2 text-3xl font-extrabold ${card.tone}`}>
-              {card.value}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* Charts */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-5">
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 lg:col-span-3">
-          <h2 className="font-bold text-slate-900">Lead theo ngày (30 ngày)</h2>
-          <div className="mt-4">
-            <LineChart points={byDay} labels={days.map((d) => d.label)} />
-          </div>
-        </div>
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 lg:col-span-2">
-          <h2 className="font-bold text-slate-900">Lead theo quốc gia</h2>
-          <div className="mt-4">
-            <DonutChart data={countryData} />
-          </div>
-        </div>
+      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        <StatCard label="Tổng hồ sơ" value={summary.total} icon={<Users size={18} />} />
+        <StatCard
+          label="Hôm nay"
+          value={summary.today}
+          icon={<UserPlus size={18} />}
+          tone="text-cyan-600"
+        />
+        <StatCard
+          label="Tháng này"
+          value={summary.month}
+          icon={<CalendarDays size={18} />}
+          tone="text-violet-600"
+        />
+        <StatCard
+          label="Tỷ lệ đậu visa"
+          value={`${summary.visaRate}%`}
+          icon={<Stamp size={18} />}
+          tone="text-emerald-600"
+        />
+        <StatCard
+          label="Lịch hẹn sắp tới"
+          value={summary.upcomingAppointments}
+          icon={<CalendarClock size={18} />}
+          tone="text-blue-600"
+        />
+        <StatCard
+          label="Tài liệu chờ xử lý"
+          value={summary.pendingDocuments}
+          icon={<FileWarning size={18} />}
+          tone="text-amber-600"
+        />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-5">
-        {/* Funnel */}
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 lg:col-span-2">
-          <h2 className="font-bold text-slate-900">Pipeline trạng thái</h2>
-          <div className="mt-4">
-            <FunnelBars data={funnelData} />
-          </div>
-        </div>
+        <Panel title="Hồ sơ theo ngày (30 ngày)" className="lg:col-span-3">
+          <LineChart
+            points={byDay.map((d) => d.count)}
+            labels={byDay.map((d) => d.label)}
+          />
+        </Panel>
+        <Panel title="Hồ sơ theo quốc gia" className="lg:col-span-2">
+          {byCountry.length === 0 ? (
+            <EmptyState message="Chưa có dữ liệu" />
+          ) : (
+            <DonutChart
+              data={byCountry.map((c) => ({ label: c.label, value: c.count }))}
+            />
+          )}
+        </Panel>
+      </div>
 
-        {/* Bảng lead mới nhất */}
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 lg:col-span-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-slate-900">Lead mới nhất</h2>
+      <div className="mt-6 grid gap-6 lg:grid-cols-5">
+        <Panel title="Pipeline trạng thái" className="lg:col-span-2">
+          <FunnelBars data={funnelData} />
+        </Panel>
+
+        <Panel
+          title="Lịch hẹn sắp tới"
+          className="lg:col-span-3"
+          extra={
             <Link
-              href="/admin/leads"
+              href="/admin/appointments"
               className="text-sm font-bold text-[#1e4fa3] hover:underline"
             >
               Xem tất cả →
             </Link>
-          </div>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[480px] text-left text-sm">
+          }
+        >
+          {upcoming.length === 0 ? (
+            <EmptyState
+              message="Không có lịch hẹn nào sắp tới"
+              hint="Đặt lịch từ trang chi tiết hồ sơ để chốt bước tư vấn tiếp theo."
+            />
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {upcoming.slice(0, 6).map((a) => (
+                <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/admin/leads/${a.leadId}`}
+                      className="font-semibold text-slate-900 hover:text-[#1e4fa3]"
+                    >
+                      {a.leadName}
+                    </Link>
+                    <p className="truncate text-xs text-slate-400">
+                      {a.topic || "Chưa ghi nội dung"}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-xs font-semibold text-slate-500">
+                    {formatDateTime(a.scheduledAt)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+
+      <Panel
+        title={isConsultant ? "Hồ sơ được giao cho bạn" : "Hồ sơ mới nhất"}
+        className="mt-6"
+        extra={
+          <Link
+            href="/admin/leads"
+            className="text-sm font-bold text-[#1e4fa3] hover:underline"
+          >
+            Xem tất cả →
+          </Link>
+        }
+      >
+        {recentLeads.length === 0 ? (
+          <EmptyState message="Chưa có hồ sơ nào" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-400">
-                  <th className="pb-2 pr-3">Họ tên</th>
+                  <th className="pb-2 pr-3">Ứng viên</th>
                   <th className="pb-2 pr-3">Quốc gia</th>
+                  <th className="pb-2 pr-3">Phụ trách</th>
                   <th className="pb-2 pr-3">Trạng thái</th>
                   <th className="pb-2">Thời gian</th>
                 </tr>
               </thead>
               <tbody>
-                {recentLeads.map((lead) => (
+                {recentLeads.slice(0, 8).map((lead) => (
                   <tr key={lead.id} className="border-b border-slate-50">
                     <td className="py-2.5 pr-3">
                       <Link
@@ -188,11 +196,16 @@ export default async function AdminDashboardPage() {
                       >
                         {lead.fullName}
                       </Link>
+                      <p className="text-xs text-slate-400">{lead.code}</p>
                     </td>
                     <td className="py-2.5 pr-3 text-slate-600">
-                      {lead.desiredCountry
-                        ? (countryName(lead.desiredCountry) ?? "—")
-                        : "—"}
+                      {byCountry.find((c) => c.slug === lead.desiredCountry)
+                        ?.label ?? "—"}
+                    </td>
+                    <td className="py-2.5 pr-3 text-slate-600">
+                      {lead.assignedToName ?? (
+                        <span className="text-amber-600">Chưa giao</span>
+                      )}
                     </td>
                     <td className="py-2.5 pr-3">
                       <StatusBadge status={lead.status} />
@@ -205,8 +218,8 @@ export default async function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
+        )}
+      </Panel>
     </div>
   );
 }

@@ -1,6 +1,14 @@
-import type { University } from "../types";
+import type { ProgramInput, University } from "../types";
 
-export const universities: University[] = [
+/**
+ * Dữ liệu seed: ngành học chưa có định danh vì được tạo sang bảng `programs`
+ * lúc seed (xem prisma/seed.ts), không lưu vào cột của bảng universities.
+ */
+export type UniversitySeed = Omit<University, "programs"> & {
+  programs: ProgramInput[];
+};
+
+export const universities: UniversitySeed[] = [
   // ============ MỸ ============
   {
     id: "u-asu",

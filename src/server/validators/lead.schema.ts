@@ -47,6 +47,10 @@ export const leadSchema = z.object({
   // Honeypot chống bot — người dùng thật không bao giờ điền field này
   website: z.string().max(0, "Yêu cầu không hợp lệ").optional().or(z.literal("")),
   sourcePage: z.string().max(500).optional(),
+  // Tracking kênh marketing (SRS mục 13 bước 3) — client tự đọc từ query string
+  utmSource: z.string().trim().max(100).optional().or(z.literal("")),
+  utmMedium: z.string().trim().max(100).optional().or(z.literal("")),
+  utmCampaign: z.string().trim().max(100).optional().or(z.literal("")),
 });
 
 export type LeadInput = z.infer<typeof leadSchema>;

@@ -61,7 +61,8 @@ export async function POST(req: NextRequest) {
         message: isDuplicate
           ? "Bạn đã đăng ký gần đây — tư vấn viên sẽ liên hệ với bạn sớm nhất, cảm ơn bạn!"
           : "Đăng ký thành công! Chúng tôi sẽ liên hệ với bạn trong vòng 24 giờ làm việc.",
-        data: { leadId: lead.id },
+        // Mã hồ sơ để ứng viên tự tra cứu tiến trình ở /tra-cuu-ho-so
+        data: { leadId: lead.id, code: lead.code },
       },
       { status: 201 },
     );
@@ -85,11 +86,19 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = req.nextUrl;
-  const leads = await leadService.list({
-    status: searchParams.get("status") || undefined,
-    country: searchParams.get("country") || undefined,
-    search: searchParams.get("search") || undefined,
-  });
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+  const leads = await leadService.list(
+    {
+      status: searchParams.get("status") || undefined,
+      country: searchParams.get("country") || undefined,
+      search: searchParams.get("search") || undefined,
+      assignedToId: searchParams.get("assignedTo") || undefined,
+      from: from ? new Date(`${from}T00:00:00`) : undefined,
+      to: to ? new Date(`${to}T23:59:59`) : undefined,
+    },
+    session,
+  );
 
   return NextResponse.json({
     success: true,

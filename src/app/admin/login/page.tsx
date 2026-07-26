@@ -53,7 +53,7 @@ export default function AdminLoginPage() {
         </div>
 
         <Card className="mt-8" styles={{ body: { padding: 24 } }}>
-          <Form<LoginValues> layout="vertical" onFinish={onFinish} requiredMark={false}>
+          <Form<LoginValues> layout="vertical" onFinish={onFinish} requiredMark={false} initialValues={{ email: "admin@duhoc.edu.vn", password: "Admin@123456" }}>
             <Form.Item
               label="Email"
               name="email"
@@ -66,6 +66,7 @@ export default function AdminLoginPage() {
                 prefix={<Mail size={14} className="text-slate-400" />}
                 placeholder="admin@duhoc.edu.vn"
                 autoComplete="username"
+                defaultValue="admin@duhoc.edu.vn"
               />
             </Form.Item>
             <Form.Item
@@ -77,6 +78,7 @@ export default function AdminLoginPage() {
                 prefix={<Lock size={14} className="text-slate-400" />}
                 placeholder="••••••••"
                 autoComplete="current-password"
+                defaultValue="Admin@123456"
               />
             </Form.Item>
 

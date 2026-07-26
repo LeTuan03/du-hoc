@@ -1,9 +1,14 @@
 import { cache } from "react";
-import type { Prisma, University as UniversityRow } from "@prisma/client";
+import type { University as UniversityRow } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../db";
-import type { Program, University } from "../types";
+import { programRepository } from "./programRepository";
+import type { Program, ProgramInput, University } from "../types";
 
-export type UniversityInput = Omit<University, "id">;
+/** Ngành học nằm ở bảng `programs`, ghép vào University khi đọc */
+export type UniversityInput = Omit<University, "id" | "programs"> & {
+  programs: ProgramInput[];
+};
 
 export interface UniversityFilter {
   country?: string;
@@ -13,21 +18,27 @@ export interface UniversityFilter {
   sort?: "featured" | "ranking" | "tuition-asc" | "tuition-desc";
 }
 
-/** Map Json columns (programs, faqs) về đúng shape của domain type */
-function toUniversity(row: UniversityRow): University {
+function toUniversity(row: UniversityRow, programs: Program[]): University {
   return {
     ...row,
-    programs: (row.programs ?? []) as unknown as Program[],
+    programs,
     faqs: (row.faqs ?? []) as unknown as University["faqs"],
   };
 }
 
-function toRowData(data: UniversityInput) {
+function toRowData(data: Omit<UniversityInput, "programs">) {
   return {
     ...data,
-    programs: data.programs as unknown as Prisma.InputJsonValue,
     faqs: data.faqs as unknown as Prisma.InputJsonValue,
   };
+}
+
+/** Ghép ngành học cho nhiều trường bằng 1 truy vấn (tránh N+1) */
+async function attachPrograms(rows: UniversityRow[]): Promise<University[]> {
+  const byUniversity = await programRepository.groupByUniversity(
+    rows.map((r) => r.slug),
+  );
+  return rows.map((row) => toUniversity(row, byUniversity.get(row.slug) ?? []));
 }
 
 export const universityRepository = {
@@ -40,20 +51,35 @@ export const universityRepository = {
         { name: "asc" },
       ],
     });
-    return rows.map(toUniversity);
+    return attachPrograms(rows);
   }),
 
   findBySlug: cache(async (slug: string): Promise<University | null> => {
     const row = await prisma.university.findUnique({ where: { slug } });
-    return row ? toUniversity(row) : null;
+    if (!row) return null;
+    return toUniversity(row, await programRepository.findByUniversity(slug));
   }),
 
   async findById(id: string): Promise<University | null> {
     const row = await prisma.university.findUnique({ where: { id } });
-    return row ? toUniversity(row) : null;
+    if (!row) return null;
+    return toUniversity(
+      row,
+      await programRepository.findByUniversity(row.slug),
+    );
   },
 
-  /** Giữ nguyên ngữ nghĩa filterUniversities cũ — 16 bản ghi, filter in-memory là đủ */
+  /** Danh sách rút gọn cho dropdown (không cần kéo theo ngành học) */
+  listOptions: cache(
+    async (): Promise<{ name: string; slug: string; countrySlug: string }[]> => {
+      return prisma.university.findMany({
+        select: { name: true, slug: true, countrySlug: true },
+        orderBy: { name: "asc" },
+      });
+    },
+  ),
+
+  /** Giữ nguyên ngữ nghĩa filterUniversities cũ — quy mô nhỏ, filter in-memory là đủ */
   async filter(filter: UniversityFilter): Promise<University[]> {
     let result = await this.findAll();
 
@@ -100,39 +126,63 @@ export const universityRepository = {
 
   /** Danh sách chuyên ngành duy nhất cho filter trang /truong */
   async getAllMajors(): Promise<string[]> {
-    const all = await this.findAll();
+    const rows = await prisma.university.findMany({ select: { majors: true } });
     const set = new Set<string>();
-    all.forEach((u) => u.majors.forEach((m) => set.add(m)));
+    rows.forEach((u) => u.majors.forEach((m) => set.add(m)));
     return [...set].sort((a, b) => a.localeCompare(b, "vi"));
   },
 
   async create(data: UniversityInput): Promise<University> {
-    return toUniversity(await prisma.university.create({ data: toRowData(data) }));
+    const { programs, ...rest } = data;
+    const row = await prisma.university.create({ data: toRowData(rest) });
+    await programRepository.syncForUniversity(row.slug, programs);
+    return toUniversity(
+      row,
+      await programRepository.findByUniversity(row.slug),
+    );
   },
 
-  /** Đổi slug sẽ cascade sang học bổng và lead tham chiếu bằng slug */
+  /** Đổi slug sẽ cascade sang học bổng, ngành học và lead tham chiếu bằng slug */
   async update(id: string, data: UniversityInput): Promise<University> {
+    const { programs, ...rest } = data;
     const existing = await prisma.university.findUnique({ where: { id } });
-    if (!existing || existing.slug === data.slug) {
-      return toUniversity(
-        await prisma.university.update({ where: { id }, data: toRowData(data) }),
-      );
+
+    let row: UniversityRow;
+    if (!existing || existing.slug === rest.slug) {
+      row = await prisma.university.update({
+        where: { id },
+        data: toRowData(rest),
+      });
+    } else {
+      const [updated] = await prisma.$transaction([
+        prisma.university.update({ where: { id }, data: toRowData(rest) }),
+        prisma.scholarship.updateMany({
+          where: { universitySlug: existing.slug },
+          data: { universitySlug: rest.slug },
+        }),
+        prisma.lead.updateMany({
+          where: { desiredUniversity: existing.slug },
+          data: { desiredUniversity: rest.slug },
+        }),
+        prisma.program.updateMany({
+          where: { universitySlug: existing.slug },
+          data: { universitySlug: rest.slug },
+        }),
+      ]);
+      row = updated;
     }
-    const [updated] = await prisma.$transaction([
-      prisma.university.update({ where: { id }, data: toRowData(data) }),
-      prisma.scholarship.updateMany({
-        where: { universitySlug: existing.slug },
-        data: { universitySlug: data.slug },
-      }),
-      prisma.lead.updateMany({
-        where: { desiredUniversity: existing.slug },
-        data: { desiredUniversity: data.slug },
-      }),
-    ]);
-    return toUniversity(updated);
+
+    await programRepository.syncForUniversity(row.slug, programs);
+    return toUniversity(
+      row,
+      await programRepository.findByUniversity(row.slug),
+    );
   },
 
-  delete(id: string): Promise<UniversityRow> {
-    return prisma.university.delete({ where: { id } });
+  async delete(id: string): Promise<UniversityRow> {
+    const row = await prisma.university.delete({ where: { id } });
+    // Ngành học tham chiếu bằng slug nên không có FK cascade — dọn thủ công
+    await prisma.program.deleteMany({ where: { universitySlug: row.slug } });
+    return row;
   },
 };

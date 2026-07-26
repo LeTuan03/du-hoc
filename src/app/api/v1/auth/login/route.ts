@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
   createSessionToken,
-  getAdminCredentials,
   sessionCookieOptions,
+  verifyCredentials,
 } from "@/server/auth";
 import { checkRateLimit, getClientIp } from "@/server/middlewares/rateLimit";
 
@@ -34,21 +34,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const creds = getAdminCredentials();
-  if (
-    parsed.data.email.toLowerCase() !== creds.email.toLowerCase() ||
-    parsed.data.password !== creds.password
-  ) {
+  const user = await verifyCredentials(parsed.data.email, parsed.data.password);
+  if (!user) {
     return NextResponse.json(
       { success: false, message: "Email hoặc mật khẩu không đúng" },
       { status: 401 },
     );
   }
 
-  const token = createSessionToken(creds.email);
+  const token = createSessionToken(user.id);
   const res = NextResponse.json({
     success: true,
-    data: { user: { email: creds.email, role: "Admin" } },
+    data: {
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+      },
+    },
   });
   res.cookies.set({ ...sessionCookieOptions, value: token });
   return res;

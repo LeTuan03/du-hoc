@@ -26,7 +26,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const lead = await leadService.getById(id);
+  const lead = await leadService.getById(id, session);
   if (!lead) {
     return NextResponse.json(
       { success: false, message: "Không tìm thấy lead" },
@@ -68,7 +68,7 @@ export async function PATCH(
         { status: 400 },
       );
     }
-    const result = await leadService.changeStatus(id, status, note || "");
+    const result = await leadService.changeStatus(id, status, note || "", session);
     if (!result.ok) {
       return NextResponse.json(
         { success: false, message: result.error },
@@ -85,7 +85,7 @@ export async function PATCH(
       { status: 400 },
     );
   }
-  const lead = await leadService.addNote(id, note);
+  const lead = await leadService.addNote(id, note, session);
   if (!lead) {
     return NextResponse.json(
       { success: false, message: "Không tìm thấy lead" },

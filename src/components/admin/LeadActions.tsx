@@ -14,13 +14,21 @@ import {
 export function LeadActions({
   leadId,
   currentStatus,
+  canOverride = false,
 }: {
   leadId: string;
   currentStatus: LeadStatus;
+  /** Super Admin được ép chuyển ngoài pipeline, bắt buộc ghi lý do */
+  canOverride?: boolean;
 }) {
   const router = useRouter();
   const { message } = App.useApp();
   const allowed = getAllowedTransitions(currentStatus);
+  const options = canOverride
+    ? (Object.keys(LEAD_STATUS_LABELS) as LeadStatus[]).filter(
+        (s) => s !== currentStatus,
+      )
+    : allowed;
 
   const [newStatus, setNewStatus] = useState<LeadStatus | undefined>();
   const [statusNote, setStatusNote] = useState("");
@@ -75,9 +83,9 @@ export function LeadActions({
   return (
     <div className="space-y-5">
       <Card title="Chuyển trạng thái">
-        {allowed.length === 0 ? (
+        {options.length === 0 ? (
           <p className="text-sm text-slate-500">
-            Lead đã ở trạng thái cuối ({LEAD_STATUS_LABELS[currentStatus]}) —
+            Hồ sơ đã ở trạng thái cuối ({LEAD_STATUS_LABELS[currentStatus]}) —
             không thể chuyển tiếp.
           </p>
         ) : (
@@ -86,9 +94,11 @@ export function LeadActions({
               placeholder="— Chọn trạng thái mới (theo pipeline) —"
               value={newStatus}
               onChange={(v) => setNewStatus(v)}
-              options={allowed.map((s) => ({
+              options={options.map((s) => ({
                 value: s,
-                label: LEAD_STATUS_LABELS[s],
+                label: allowed.includes(s)
+                  ? LEAD_STATUS_LABELS[s]
+                  : `${LEAD_STATUS_LABELS[s]} — ngoài pipeline`,
               }))}
               style={{ width: "100%" }}
             />
@@ -98,6 +108,13 @@ export function LeadActions({
               onChange={(e) => setStatusNote(e.target.value)}
               placeholder="Ghi chú kèm theo (tùy chọn). VD: Khách đồng ý lộ trình, hẹn ký hợp đồng thứ 6..."
             />
+            {newStatus && !allowed.includes(newStatus) && (
+              <Alert
+                type="warning"
+                showIcon
+                message="Chuyển ngoài pipeline — bắt buộc ghi rõ lý do ở ô ghi chú"
+              />
+            )}
             <Button
               type="primary"
               block

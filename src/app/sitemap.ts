@@ -21,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/`, priority: 1, changeFrequency: "daily" },
     { url: `${base}/quoc-gia`, priority: 0.9, changeFrequency: "weekly" },
     { url: `${base}/truong`, priority: 0.9, changeFrequency: "daily" },
+    { url: `${base}/tim-nganh-hoc`, priority: 0.9, changeFrequency: "weekly" },
     { url: `${base}/hoc-bong`, priority: 0.9, changeFrequency: "daily" },
     { url: `${base}/tin-tuc`, priority: 0.8, changeFrequency: "daily" },
     { url: `${base}/chuong-trinh-hoc`, priority: 0.7, changeFrequency: "weekly" },

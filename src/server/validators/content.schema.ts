@@ -66,7 +66,7 @@ const levelValues = Object.keys(PROGRAM_LEVEL_LABELS) as [
   ...ProgramLevel[],
 ];
 
-const programSchema = z.object({
+export const programSchema = z.object({
   name: z.string().trim().min(1, "Tên chương trình không được trống"),
   level: z.enum(levelValues, { message: "Bậc học không hợp lệ" }),
   durationMonths: z.coerce
@@ -77,6 +77,17 @@ const programSchema = z.object({
   tuitionPerYear: z.coerce
     .number({ message: "Học phí/năm phải là số" })
     .min(0, "Học phí/năm không được âm"),
+  description: z.string().trim().max(2000).default(""),
+  intakeMonths: z
+    .array(z.coerce.number().int().min(1).max(12))
+    .max(12)
+    .default([]),
+});
+
+/** Ngành học đứng riêng ở /admin/programs — cần chỉ rõ thuộc trường nào */
+export const standaloneProgramSchema = programSchema.extend({
+  universitySlug: z.string().trim().min(1, "Vui lòng chọn trường"),
+  isActive: z.boolean().default(true),
 });
 
 const qaSchema = z.object({

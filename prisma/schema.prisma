@@ -13,6 +13,31 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+/// Tài khoản nội bộ: Super Admin / Admin / Tư vấn viên (SRS mục 6.2 `users`, 12.1 RBAC).
+/// Vai trò lưu dạng String kèm chú thích để đồng bộ với quy ước enum của schema này.
+model User {
+  id           String    @id @default(cuid())
+  fullName     String
+  email        String    @unique
+  passwordHash String
+  phone        String?
+  avatarUrl    String?
+  role         String    @default("consultant") // super_admin | admin | consultant
+  status       String    @default("active") // active | inactive
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  assignedLeads    Lead[]         @relation("LeadAssignee")
+  leadNotes        LeadNote[]
+  appointments     Appointment[]  @relation("AppointmentConsultant")
+  reviewedDocuments LeadDocument[] @relation("DocumentReviewer")
+
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
 model Country {
   id              String   @id @default(cuid())
   name            String
@@ -47,13 +72,36 @@ model University {
   dormitoryInfo         String
   isFeatured            Boolean  @default(false)
   majors                String[]
-  programs              Json     @default("[]") // Program[] — {name, level, durationMonths, tuitionPerYear}
+  // Ngành học đã tách sang bảng `programs` (quan hệ qua slug, xem model Program)
   faqs                  Json     @default("[]") // {question, answer}[]
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   @@index([countrySlug])
   @@map("universities")
+}
+
+/// Ngành/chương trình học của trường (SRS mục 6.2 `programs`).
+/// Tách khỏi cột Json `universities.programs` để phục vụ công cụ tra cứu
+/// ngành học toàn hệ thống và API `GET /programs?level=&university=`.
+model Program {
+  id             String   @id @default(cuid())
+  universitySlug String
+  name           String
+  slug           String
+  level          String // ProgramLevel: dai-hoc | sau-dai-hoc | cao-dang | thac-si | tien-si | du-bi-dai-hoc | chuyen-tiep
+  durationMonths Int
+  tuitionPerYear Int // USD/năm
+  description    String   @default("")
+  intakeMonths   Int[]    @default([]) // tháng nhập học, 1..12
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([universitySlug, slug])
+  @@index([universitySlug])
+  @@index([level])
+  @@map("programs")
 }
 
 model Scholarship {
@@ -122,6 +170,9 @@ model Faq {
 
 model Lead {
   id                String     @id @default(cuid())
+  /// Mã hồ sơ công khai (VD: DH-2026-0007) — ứng viên dùng để tra cứu
+  /// tiến trình ở trang /tra-cuu-ho-so mà không cần tài khoản.
+  code              String     @unique
   fullName          String
   dateOfBirth       String // ISO date yyyy-mm-dd
   gender            String // male | female | other
@@ -139,12 +190,23 @@ model Lead {
   note              String?
   status            String     @default("new") // LeadStatus pipeline
   sourcePage        String?
+  /// Tracking hiệu quả kênh marketing (SRS mục 6.2 `leads`, mục 13 bước 3)
+  utmSource         String?
+  utmMedium         String?
+  utmCampaign       String?
+  /// Tư vấn viên phụ trách — nền tảng cho phân quyền "chỉ xem lead được giao"
+  assignedToId      String?
+  assignedTo        User?      @relation("LeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   notes             LeadNote[]
+  appointments      Appointment[]
+  documents         LeadDocument[]
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
   @@index([email])
   @@index([status])
+  @@index([assignedToId])
+  @@index([createdAt])
   @@map("leads")
 }
 
@@ -152,10 +214,69 @@ model LeadNote {
   id             String   @id @default(cuid())
   leadId         String
   lead           Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  /// Người ghi chú — null với ghi chú do hệ thống sinh (VD: khách đăng ký lại)
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   note           String
   statusChangeTo String?
   createdAt      DateTime @default(now())
 
   @@index([leadId])
   @@map("lead_notes")
+}
+
+/// Lịch hẹn tư vấn giữa ứng viên và tư vấn viên.
+model Appointment {
+  id              String   @id @default(cuid())
+  leadId          String
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  consultantId    String?
+  consultant      User?    @relation("AppointmentConsultant", fields: [consultantId], references: [id], onDelete: SetNull)
+  scheduledAt     DateTime
+  durationMinutes Int      @default(30)
+  mode            String   @default("online") // online | office | phone
+  location        String? // địa chỉ văn phòng hoặc link phòng họp
+  topic           String   @default("")
+  status          String   @default("scheduled") // scheduled | completed | cancelled | no_show
+  outcome         String? // kết quả buổi tư vấn, điền sau khi hoàn thành
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([consultantId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@map("appointments")
+}
+
+/// Checklist tài liệu hồ sơ du học của từng ứng viên (học bạ, hộ chiếu,
+/// chứng chỉ ngoại ngữ, chứng minh tài chính...).
+model LeadDocument {
+  id           String    @id @default(cuid())
+  leadId       String
+  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type         String // DocumentType code — xem src/server/types.ts
+  name         String
+  fileUrl      String?
+  status       String    @default("pending") // pending | submitted | approved | rejected
+  note         String?
+  reviewedById String?
+  reviewedBy   User?     @relation("DocumentReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+  @@map("lead_documents")
+}
+
+/// Cấu hình site dạng key-value (hotline, email, địa chỉ, mạng xã hội,
+/// SEO mặc định) — SRS mục 6.2 `settings`.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
 }
